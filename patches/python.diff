@@ -1,65 +1,570 @@
---- a/CMakeLists.txt
+diff --git a/.gitignore b/.gitignore
+index f805e81..0a1e2b0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,14 @@
+ # Debug files
+ *.dSYM/
+ *.su
++*.user
++*.VC.db
++*.VC.opendb
++externals/openssl-1.0.2j/tmp/
++*.exp
++*.pyd
++*.pyc
++build/
++.vscode/
++PCBuild/obj/
++python.bat
+\ No newline at end of file
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..725ec64
+--- /dev/null
 +++ b/CMakeLists.txt
-@@ -188,6 +188,7 @@
- set(_download_2.7.10_md5 "d7547558fd673bd9d38e2108c6b42521")
- set(_download_2.7.11_md5 "6b6076ec9e93f05dd63e47eb9c15728b")
- set(_download_2.7.12_md5 "88d61f82e3616a4be952828b3694109d")
-+set(_download_2.7.13_md5 "17add4bf0ad0ec2f08e0cae6d205c700")
- set(_download_3.5.1_md5 "be78e48cdfc1a7ad90efff146dce6cfe")
- set(_download_3.5.2_md5 "3fe8434643a78630c61c6464fe2e7e72")
- set(_extracted_dir "Python-${PY_VERSION}")
-@@ -327,7 +328,7 @@
- endif()
- set(INCLUDE_INSTALL_DIR include/${LIBPYTHON})
- if(MSVC)
--    set(INCLUDE_INSTALL_DIR include)
-+    set(INCLUDE_INSTALL_DIR include/python)
- endif()
- # Build tree directory
- set(BIN_BUILD_DIR ${PROJECT_BINARY_DIR}/bin)
---- a/cmake/libpython/CMakeLists.txt
-+++ b/cmake/libpython/CMakeLists.txt
-@@ -477,6 +477,10 @@
-     set_target_properties(libpython-shared PROPERTIES
-         ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
-     )
-+    if(MSVC)
-+        set_target_properties(libpython-shared PROPERTIES COMPILE_PDB_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR} COMPILE_PDB_NAME python27)
-+        install(FILES ${PROJECT_BINARY_DIR}/RelWithDebInfo/python27.pdb DESTINATION lib CONFIGURATIONS RelWithDebInfo)
-+    endif()
-     if(APPLE)
-         # HACK For python <= 2.7.3, this fix link error related to undefined _environ symbol and
-         #      is equivalent to solution implemented in commit http://hg.python.org/cpython/rev/864b983
+@@ -0,0 +1,434 @@
++cmake_minimum_required(VERSION 3.2)
++
++project(python VERSION 2.7.13 LANGUAGES C)
++
++if(MSVC)
++    set(CMAKE_DEBUG_POSTFIX "d")
++endif()
++
++add_library(python27 SHARED
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/abstract.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/asdl.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/ast.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/bitset.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/boolobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/bufferobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/bytes_methods.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/bytearrayobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/bytesobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/cellobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/ceval.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/classobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/cobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/code.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/codecs.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/compile.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/complexobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/cStringIO.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/datetime.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/descrobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/dictobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/dtoa.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/enumobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/errcode.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/eval.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/fileobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/floatobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/frameobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/funcobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/genobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/graminit.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/grammar.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/import.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/intobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/intrcheck.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/iterobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/listobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/longintrepr.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/longobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/marshal.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/memoryobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/metagrammar.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/methodobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/modsupport.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/moduleobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/node.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/object.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/objimpl.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/opcode.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/osdefs.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/parsetok.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/patchlevel.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pgen.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pgenheaders.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/py_curses.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyarena.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pycapsule.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyctype.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pydebug.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyerrors.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyexpat.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyfpe.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pygetopt.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pymactoolbox.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pymath.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pymem.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pyport.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pystate.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pystrcmp.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pystrtod.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Python-ast.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Python.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pythonrun.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/pythread.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/rangeobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/setobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/sliceobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/stringobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/structmember.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/structseq.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/symtable.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/sysmodule.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/timefuncs.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/token.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/traceback.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/tupleobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/ucnhash.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/unicodeobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Include/weakrefobject.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_math.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/md5.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/rotatingtree.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/crc32.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/deflate.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inffast.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inffixed.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inflate.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inftrees.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/trees.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/zconf.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/zlib.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/zutil.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/alg_jisx0201.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/cjkcodecs.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/emu_jisx0213_2000.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_cn.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_hk.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_jisx0213_pair.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_jp.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_kr.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/mappings_tw.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/multibytecodec.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/_iomodule.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringlib/count.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringlib/fastsearch.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringlib/find.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringlib/partition.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringlib/split.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/unicodetype_db.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/parser.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/tokenizer.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/errmap.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/pyconfig.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/importdl.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/thread_nt.h
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_bisectmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_codecsmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_collectionsmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_csv.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_functoolsmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_heapqmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_hotshot.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_json.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_localemodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_lsprof.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_math.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_randommodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_sre.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_struct.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_weakref.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/arraymodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/audioop.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/binascii.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cmathmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cPickle.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cStringIO.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/datetimemodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/errnomodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/future_builtins.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/gcmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/imageop.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/itertoolsmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/main.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/mathmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/md5.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/md5module.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/mmapmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/operator.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/parsermodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/posixmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/rotatingtree.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/sha256module.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/sha512module.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/shamodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/signalmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/stropmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/symtablemodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/threadmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/timemodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/xxsubtype.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zipimport.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlibmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/adler32.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/compress.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/crc32.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/deflate.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/gzclose.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/gzlib.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/gzread.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/gzwrite.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/infback.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inffast.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inflate.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/inftrees.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/trees.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/uncompr.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib/zutil.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_cn.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_hk.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_iso2022.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_jp.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_kr.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/_codecs_tw.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/cjkcodecs/multibytecodec.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/_iomodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/bufferedio.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/bytesio.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/fileio.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/iobase.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/stringio.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/_io/textio.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/abstract.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/boolobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/bufferobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/bytes_methods.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/bytearrayobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/capsule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/cellobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/classobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/cobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/codeobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/complexobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/descrobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/dictobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/enumobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/exceptions.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/fileobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/floatobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/frameobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/funcobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/genobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/intobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/iterobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/listobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/longobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/memoryobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/methodobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/moduleobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/object.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/obmalloc.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/rangeobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/setobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/sliceobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/stringobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/structseq.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/tupleobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/typeobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/unicodectype.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/unicodeobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Objects/weakrefobject.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/acceler.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/bitset.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/firstsets.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/grammar.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/grammar1.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/listnode.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/metagrammar.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/myreadline.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/node.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/parser.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/parsetok.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/tokenizer.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/_subprocess.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/_winreg.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/config.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/dl_nt.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/getpathp.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/import_nt.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/msvcrtmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/_warnings.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/asdl.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/ast.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/bltinmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/ceval.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/codecs.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/compile.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/dtoa.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/dynload_win.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/errors.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/formatter_string.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/formatter_unicode.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/frozen.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/future.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getargs.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getcompiler.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getcopyright.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getopt.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getplatform.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/getversion.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/graminit.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/import.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/importdl.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/marshal.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/modsupport.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/mysnprintf.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/mystrtoul.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/peephole.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pyarena.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pyctype.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pyfpe.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pymath.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pystate.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pystrcmp.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pystrtod.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/Python-ast.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/pythonrun.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/random.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/structmember.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/symtable.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/sysmodule.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/thread.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/Python/traceback.c
++    ${CMAKE_CURRENT_SOURCE_DIR}/PC/python_nt.rc
++    ${CMAKE_CURRENT_SOURCE_DIR}/Modules/getbuildinfo.c
++)
++
++target_include_directories(python27
++  PRIVATE
++  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
++  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PC>
++  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Python>
++  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib>
++  INTERFACE
++  $<INSTALL_INTERFACE:include/python>
++  PUBLIC
++  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
++)
++
++target_compile_definitions(python27
++  PRIVATE
++  _CRT_SECURE_NO_WARNINGS
++  _CRT_STDC_NO_DEPRECATE
++  _USRDLL
++  Py_BUILD_CORE
++  Py_ENABLE_SHARED
++)
++
++# add_subdirectory(Modules/_ctypes)
++
++if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
++    add_custom_command(TARGET python27
++    PRE_BUILD
++    COMMAND "C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" pcbuild.sln /p:Configuration=Release /p:Platform=win32
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/PCbuild
++    )
++else()
++    add_custom_command(TARGET python27
++    PRE_BUILD
++    COMMAND "C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" pcbuild.sln /p:Configuration=Release /p:Platform=x64
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/PCbuild
++    )
++endif()
++
++include(CMakePackageConfigHelpers)
++write_basic_package_version_file(
++  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
++  VERSION ${PROJECT_VERSION}
++  COMPATIBILITY AnyNewerVersion
++)
++
++install(TARGETS python27 EXPORT python27
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib
++  LIBRARY DESTINATION lib
++)
++
++install(DIRECTORY
++  ${CMAKE_CURRENT_SOURCE_DIR}/Include/
++  DESTINATION include/python
++)
++
++install(FILES
++  ${CMAKE_CURRENT_SOURCE_DIR}/PC/pyconfig.h
++  DESTINATION include/python
++)
++
++if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
++  install(DIRECTORY
++    ${CMAKE_CURRENT_SOURCE_DIR}/PCbuild/
++    DESTINATION bin/python/DLLs
++    FILES_MATCHING PATTERN *.pyd
++    PATTERN .vs EXCLUDE
++    PATTERN amd64 EXCLUDE
++    PATTERN Debug EXCLUDE
++    PATTERN obj EXCLUDE
++  )
++else()
++  install(DIRECTORY
++    ${CMAKE_CURRENT_SOURCE_DIR}/PCbuild/amd64/
++    DESTINATION bin/python/DLLs
++    FILES_MATCHING PATTERN *.pyd
++    PATTERN .vs EXCLUDE
++    PATTERN Debug EXCLUDE
++    PATTERN obj EXCLUDE
++  )
++endif()
++
++install(DIRECTORY
++    ${CMAKE_CURRENT_SOURCE_DIR}/Lib
++    DESTINATION lib/python
++    PATTERN plat-* EXCLUDE
++    PATTERN msilib EXCLUDE
++    PATTERN lib-tk EXCLUDE
++    PATTERN curses EXCLUDE
++    PATTERN bsddb EXCLUDE
++    PATTERN *test EXCLUDE
++    PATTERN idlelib EXCLUDE
++)
++
++install(EXPORT python27
++  FILE
++  ${PROJECT_NAME}.cmake
++  NAMESPACE
++    ${PROJECT_NAME}::
++  DESTINATION
++    lib/cmake/${PROJECT_NAME}
++)
++
++install(FILES
++  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake
++  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
++  DESTINATION
++    lib/cmake/${PROJECT_NAME}
++)
++
++export(TARGETS python27
++  FILE
++  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
++  NAMESPACE ${PROJECT_NAME}::
++)
++
++install(FILES
++  $<TARGET_PDB_FILE:python27>
++  DESTINATION lib
++)
+\ No newline at end of file
+diff --git a/Include/pystate.h b/Include/pystate.h
+index f2cfc30..55eb7eb 100644
+--- a/Include/pystate.h
++++ b/Include/pystate.h
+@@ -126,11 +126,7 @@ PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
+ 
+ PyAPI_DATA(PyThreadState *) _PyThreadState_Current;
+ 
+-#ifdef Py_DEBUG
+ #define PyThreadState_GET() PyThreadState_Get()
+-#else
+-#define PyThreadState_GET() (_PyThreadState_Current)
+-#endif
+ 
+ typedef
+     enum {PyGILState_LOCKED, PyGILState_UNLOCKED}
+diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+index e73805f..d28b068 100644
 --- a/Modules/posixmodule.c
 +++ b/Modules/posixmodule.c
-@@ -558,7 +558,7 @@
+@@ -558,7 +558,7 @@ typedef struct {
      char osfile;
  } my_ioinfo;
  
 -extern __declspec(dllimport) char * __pioinfo[];
-+// extern __declspec(dllimport) char * __pioinfo[];
++//extern __declspec(dllimport) char * __pioinfo[];
  #define IOINFO_L2E 5
  #define IOINFO_ARRAY_ELTS   (1 << IOINFO_L2E)
  #define IOINFO_ARRAYS 64
-@@ -570,6 +570,7 @@
+@@ -570,38 +570,39 @@ extern __declspec(dllimport) char * __pioinfo[];
  int
  _PyVerify_fd(int fd)
  {
-+#if _MSC_VER < 1900
-     const int i1 = fd >> IOINFO_L2E;
-     const int i2 = fd & ((1 << IOINFO_L2E) - 1);
-
-@@ -602,6 +603,7 @@
-   fail:
-     errno = EBADF;
-     return 0;
-+#endif
+-    const int i1 = fd >> IOINFO_L2E;
+-    const int i2 = fd & ((1 << IOINFO_L2E) - 1);
+-
+-    static int sizeof_ioinfo = 0;
+-
+-    /* Determine the actual size of the ioinfo structure,
+-     * as used by the CRT loaded in memory
+-     */
+-    if (sizeof_ioinfo == 0 && __pioinfo[0] != NULL) {
+-        sizeof_ioinfo = _msize(__pioinfo[0]) / IOINFO_ARRAY_ELTS;
+-    }
+-    if (sizeof_ioinfo == 0) {
+-        /* This should not happen... */
+-        goto fail;
+-    }
+-
+-    /* See that it isn't a special CLEAR fileno */
+-    if (fd != _NO_CONSOLE_FILENO) {
+-        /* Microsoft CRT would check that 0<=fd<_nhandle but we can't do that.  Instead
+-         * we check pointer validity and other info
+-         */
+-        if (0 <= i1 && i1 < IOINFO_ARRAYS && __pioinfo[i1] != NULL) {
+-            /* finally, check that the file is open */
+-            my_ioinfo* info = (my_ioinfo*)(__pioinfo[i1] + i2 * sizeof_ioinfo);
+-            if (info->osfile & FOPEN) {
+-                return 1;
+-            }
+-        }
+-    }
+-  fail:
+-    errno = EBADF;
+-    return 0;
++    return 1;
++  //  const int i1 = fd >> IOINFO_L2E;
++  //  const int i2 = fd & ((1 << IOINFO_L2E) - 1);
++
++  //  static int sizeof_ioinfo = 0;
++
++  //  /* Determine the actual size of the ioinfo structure,
++  //   * as used by the CRT loaded in memory
++  //   */
++  //  if (sizeof_ioinfo == 0 && __pioinfo[0] != NULL) {
++  //      sizeof_ioinfo = _msize(__pioinfo[0]) / IOINFO_ARRAY_ELTS;
++  //  }
++  //  if (sizeof_ioinfo == 0) {
++  //      /* This should not happen... */
++  //      goto fail;
++  //  }
++
++  //  /* See that it isn't a special CLEAR fileno */
++  //  if (fd != _NO_CONSOLE_FILENO) {
++  //      /* Microsoft CRT would check that 0<=fd<_nhandle but we can't do that.  Instead
++  //       * we check pointer validity and other info
++  //       */
++  //      if (0 <= i1 && i1 < IOINFO_ARRAYS && __pioinfo[i1] != NULL) {
++  //          /* finally, check that the file is open */
++  //          my_ioinfo* info = (my_ioinfo*)(__pioinfo[i1] + i2 * sizeof_ioinfo);
++  //          if (info->osfile & FOPEN) {
++  //              return 1;
++  //          }
++  //      }
++  //  }
++  //fail:
++  //  errno = EBADF;
++  //  return 0;
  }
  
  /* the special case of checking dup2.  The target fd must be in a sensible range */
+diff --git a/Modules/timemodule.c b/Modules/timemodule.c
+index 12c43b0..20d7c4b 100644
 --- a/Modules/timemodule.c
 +++ b/Modules/timemodule.c
-@@ -650,6 +650,7 @@
+@@ -650,6 +650,7 @@ PyDoc_STRVAR(mktime_doc,
  Convert a time tuple in local time to seconds since the Epoch.");
  #endif /* HAVE_MKTIME */
  
@@ -67,7 +572,7 @@
  #ifdef HAVE_WORKING_TZSET
  static void inittimezone(PyObject *module);
  
-@@ -707,7 +708,7 @@
+@@ -707,7 +708,7 @@ inittimezone(PyObject *m) {
       */
  #if defined(HAVE_TZNAME) && !defined(__GLIBC__) && !defined(__CYGWIN__)
      tzset();
@@ -76,7 +581,7 @@
      PyModule_AddIntConstant(m, "timezone", _timezone);
  #else /* !PYOS_OS2 */
      PyModule_AddIntConstant(m, "timezone", timezone);
-@@ -715,15 +716,15 @@
+@@ -715,15 +716,15 @@ inittimezone(PyObject *m) {
  #ifdef HAVE_ALTZONE
      PyModule_AddIntConstant(m, "altzone", altzone);
  #else
@@ -95,9 +600,132 @@
  #else /* !HAVE_TZNAME || __GLIBC__ || __CYGWIN__*/
  #ifdef HAVE_STRUCT_TM_TM_ZONE
      {
+diff --git a/Objects/dictobject.c b/Objects/dictobject.c
+index e3e4765..167dd00 100644
+--- a/Objects/dictobject.c
++++ b/Objects/dictobject.c
+@@ -728,7 +728,7 @@ PyDict_GetItem(PyObject *op, PyObject *key)
+        Let's just hope that no exception occurs then...  This must be
+        _PyThreadState_Current and not PyThreadState_GET() because in debug
+        mode, the latter complains if tstate is NULL. */
+-    tstate = _PyThreadState_Current;
++    tstate = PyThreadState_Get();
+     if (tstate != NULL && tstate->curexc_type != NULL) {
+         /* preserve the existing exception */
+         PyObject *err_type, *err_value, *err_tb;
+diff --git a/PC/bdist_wininst/bdist_wininst.vcxproj b/PC/bdist_wininst/bdist_wininst.vcxproj
+index 2ab474e..39e4d80 100644
+--- a/PC/bdist_wininst/bdist_wininst.vcxproj
++++ b/PC/bdist_wininst/bdist_wininst.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -47,6 +47,30 @@
+     <UseOfMfc>false</UseOfMfc>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+diff --git a/PC/bdist_wininst/bdist_wininst.vcxproj.filters b/PC/bdist_wininst/bdist_wininst.vcxproj.filters
+index b4b6a4d..2f1d034 100644
+--- a/PC/bdist_wininst/bdist_wininst.vcxproj.filters
++++ b/PC/bdist_wininst/bdist_wininst.vcxproj.filters
+@@ -18,43 +18,43 @@
+     </Filter>
+   </ItemGroup>
+   <ItemGroup>
+-    <ClCompile Include="..\PC\bdist_wininst\extract.c">
++    <ClCompile Include="extract.c">
+       <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\PC\bdist_wininst\install.c">
++    <ClCompile Include="install.c">
+       <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\adler32.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\adler32.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\crc32.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\crc32.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\inffast.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\inffast.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\inflate.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\inflate.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\inftrees.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\inftrees.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+-    <ClCompile Include="..\Modules\zlib\zutil.c">
+-      <Filter>Source Files\zlib</Filter>
++    <ClCompile Include="..\..\Modules\zlib\zutil.c">
++      <Filter>Source Files</Filter>
+     </ClCompile>
+   </ItemGroup>
+   <ItemGroup>
+-    <ClInclude Include="..\PC\bdist_wininst\archive.h">
++    <ClInclude Include="archive.h">
+       <Filter>Header Files</Filter>
+     </ClInclude>
+   </ItemGroup>
+   <ItemGroup>
+-    <ResourceCompile Include="..\PC\bdist_wininst\install.rc">
+-      <Filter>Resource Files</Filter>
++    <ResourceCompile Include="install.rc">
++      <Filter>Source Files</Filter>
+     </ResourceCompile>
+   </ItemGroup>
+   <ItemGroup>
+-    <None Include="..\PC\bdist_wininst\PythonPowered.bmp">
++    <None Include="PythonPowered.bmp">
+       <Filter>Resource Files</Filter>
+     </None>
+   </ItemGroup>
+diff --git a/PC/dl_nt.c b/PC/dl_nt.c
+index ef1ce09..88d3c9b 100644
 --- a/PC/dl_nt.c
 +++ b/PC/dl_nt.c
-@@ -76,6 +76,13 @@
+@@ -76,6 +76,13 @@ void _Py_DeactivateActCtx(ULONG_PTR cookie)
              OutputDebugString("Python failed to de-activate the activation context\n");
  }
  
@@ -111,7 +739,7 @@
  BOOL    WINAPI  DllMain (HANDLE hInst,
                                                  ULONG ul_reason_for_call,
                                                  LPVOID lpReserved)
-@@ -87,6 +94,7 @@
+@@ -87,6 +94,7 @@ BOOL    WINAPI  DllMain (HANDLE hInst,
              // 1000 is a magic number I picked out of the air.  Could do with a #define, I spose...
              LoadString(hInst, 1000, dllVersionBuffer, sizeof(dllVersionBuffer));
  
@@ -119,9 +747,11 @@
              // and capture our activation context for use when loading extensions.
              _LoadActCtxPointers();
              if (pfnGetCurrentActCtx && pfnAddRefActCtx)
+diff --git a/PC/pyconfig.h b/PC/pyconfig.h
+index 5d1c90a..896a337 100644
 --- a/PC/pyconfig.h
 +++ b/PC/pyconfig.h
-@@ -335,7 +335,7 @@
+@@ -335,7 +335,7 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
  			their Makefile (other compilers are generally
  			taken care of by distutils.) */
  #			ifdef _DEBUG
@@ -130,15 +760,1862 @@
  #			else
  #				pragma comment(lib,"python27.lib")
  #			endif /* _DEBUG */
-@@ -376,9 +376,11 @@
+@@ -376,10 +376,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
  #	endif
  #endif
  
-+#if 0
- #ifdef _DEBUG
- #	define Py_DEBUG
- #endif
-+#endif
- 
+-#ifdef _DEBUG
+-#	define Py_DEBUG
+-#endif
+-
++//#ifdef _DEBUG
++//#	define Py_DEBUG
++//#endif
  
  #ifdef MS_WIN32
+ 
+diff --git a/PC/python_nt.rc b/PC/python_nt.rc
+index 19bcbdd..5ca89e6 100644
+--- a/PC/python_nt.rc
++++ b/PC/python_nt.rc
+@@ -7,7 +7,7 @@
+ #include "modsupport.h"
+ #include "patchlevel.h"
+ #ifdef _DEBUG
+-#   include "pythonnt_rc_d.h"
++#   include "pythonnt_rc.h"
+ #else
+ #   include "pythonnt_rc.h"
+ #endif
+diff --git a/PC/pythonnt_rc.h b/PC/pythonnt_rc.h
+new file mode 100644
+index 0000000..c43f820
+--- /dev/null
++++ b/PC/pythonnt_rc.h
+@@ -0,0 +1,4 @@
++/* This file created by python.props /t:GeneratePythonNtRcH */
++#define FIELD3 12150
++#define MS_DLL_ID "2.7"
++#define PYTHON_DLL_NAME "python27.dll"
+diff --git a/PCbuild/_bsddb.vcxproj b/PCbuild/_bsddb.vcxproj
+index 8ce64b5..23a4085 100644
+--- a/PCbuild/_bsddb.vcxproj
++++ b/PCbuild/_bsddb.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,7 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
+-  <PropertyGroup Label="Configuration" />
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -311,4 +334,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_ctypes.vcxproj b/PCbuild/_ctypes.vcxproj
+index 5bcf432..679a695 100644
+--- a/PCbuild/_ctypes.vcxproj
++++ b/PCbuild/_ctypes.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -104,4 +128,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_ctypes_test.vcxproj b/PCbuild/_ctypes_test.vcxproj
+index 4a54106..0fd1252 100644
+--- a/PCbuild/_ctypes_test.vcxproj
++++ b/PCbuild/_ctypes_test.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -46,6 +46,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -74,4 +98,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_elementtree.vcxproj b/PCbuild/_elementtree.vcxproj
+index 1ce1a04..b4bc645 100644
+--- a/PCbuild/_elementtree.vcxproj
++++ b/PCbuild/_elementtree.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -100,4 +124,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_hashlib.vcxproj b/PCbuild/_hashlib.vcxproj
+index 5616a1e..be740bd 100644
+--- a/PCbuild/_hashlib.vcxproj
++++ b/PCbuild/_hashlib.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -87,4 +111,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_msi.vcxproj b/PCbuild/_msi.vcxproj
+index 6c5fa8c..2a8bc01 100644
+--- a/PCbuild/_msi.vcxproj
++++ b/PCbuild/_msi.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -77,4 +101,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_multiprocessing.vcxproj b/PCbuild/_multiprocessing.vcxproj
+index 3a71c17..d0b4dc6 100644
+--- a/PCbuild/_multiprocessing.vcxproj
++++ b/PCbuild/_multiprocessing.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -85,4 +109,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_socket.vcxproj b/PCbuild/_socket.vcxproj
+index 453d3f7..1d8c131 100644
+--- a/PCbuild/_socket.vcxproj
++++ b/PCbuild/_socket.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -80,4 +104,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_sqlite3.vcxproj b/PCbuild/_sqlite3.vcxproj
+index a470335..a07bfd3 100644
+--- a/PCbuild/_sqlite3.vcxproj
++++ b/PCbuild/_sqlite3.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -104,4 +128,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_ssl.vcxproj b/PCbuild/_ssl.vcxproj
+index 73c9571..51c62c7 100644
+--- a/PCbuild/_ssl.vcxproj
++++ b/PCbuild/_ssl.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -91,4 +115,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_testcapi.vcxproj b/PCbuild/_testcapi.vcxproj
+index 77df0cb..6b826ac 100644
+--- a/PCbuild/_testcapi.vcxproj
++++ b/PCbuild/_testcapi.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -46,6 +46,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -77,4 +101,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/_tkinter.vcxproj b/PCbuild/_tkinter.vcxproj
+index e0610a2..19f46c7 100644
+--- a/PCbuild/_tkinter.vcxproj
++++ b/PCbuild/_tkinter.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -77,14 +101,8 @@
+       <Project>{cf7ac3d1-e2df-41d2-bea6-1e2556cdea26}</Project>
+       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+     </ProjectReference>
+-    <ProjectReference Include="tcl.vcxproj">
+-      <Project>{b5fd6f1d-129e-4bff-9340-03606fac7283}</Project>
+-    </ProjectReference>
+-    <ProjectReference Include="tk.vcxproj">
+-      <Project>{7e85eccf-a72c-4da4-9e52-884508e80ba1}</Project>
+-    </ProjectReference>
+   </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/bz2.vcxproj b/PCbuild/bz2.vcxproj
+index c782e7b..e68b669 100644
+--- a/PCbuild/bz2.vcxproj
++++ b/PCbuild/bz2.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -46,7 +46,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
+-  <PropertyGroup Label="Configuration" />
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -93,4 +116,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/env.bat b/PCbuild/env.bat
+index 2e67f8c..8d6a90b 100644
+--- a/PCbuild/env.bat
++++ b/PCbuild/env.bat
+@@ -14,7 +14,7 @@ echo.
+ rem Set up the v90 tools first.  This is mostly needed to allow PGInstrument
+ rem builds to find the PGO DLL.  Do it first so the newer MSBuild is found
+ rem before the one from v90 (vcvarsall.bat prepends to PATH).
+-call "%VS90COMNTOOLS%..\..\VC\vcvarsall.bat" %*
++call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %*
+ 
+ set VSTOOLS=%VS140COMNTOOLS%
+ if "%VSTOOLS%"=="" set VSTOOLS=%VS120COMNTOOLS%
+diff --git a/PCbuild/get_externals.bat b/PCbuild/get_externals.bat
+index 64ab845..7e4491d 100644
+--- a/PCbuild/get_externals.bat
++++ b/PCbuild/get_externals.bat
+@@ -60,9 +60,9 @@ if NOT "%IncludeBsddb%"=="false" set libraries=%libraries%   db-4.7.25.0
+ if NOT "%IncludeSSL%"=="false" set libraries=%libraries%     nasm-2.11.06
+ if NOT "%IncludeSSL%"=="false" set libraries=%libraries%     openssl-1.0.2j
+ set libraries=%libraries%                                    sqlite-3.8.11.0
+-if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tcl-8.5.15.0
+-if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tk-8.5.15.0
+-if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tix-8.4.3.5
++REM if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tcl-8.5.15.0
++REM if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tk-8.5.15.0
++REM if NOT "%IncludeTkinter%"=="false" set libraries=%libraries% tix-8.4.3.5
+ 
+ for %%e in (%libraries%) do (
+     if exist %%e (
+diff --git a/PCbuild/libeay.vcxproj b/PCbuild/libeay.vcxproj
+index 68ef936..cc8ba40 100644
+--- a/PCbuild/libeay.vcxproj
++++ b/PCbuild/libeay.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -38,17 +38,37 @@
+     <ProjectGuid>{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}</ProjectGuid>
+     <RootNamespace>libeay</RootNamespace>
+   </PropertyGroup>
+-
+   <Import Project="python.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+-
+   <PropertyGroup Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
+   </PropertyGroup>
+-
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="openssl.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+-
+   <Target Name="CreateBuildinfH" Inputs="$(MSBuildProjectFullPath)" Outputs="$(IntDir)\buildinf.h" AfterTargets="PrepareForBuild">
+     <PropertyGroup>
+       <_DATEValue>#define DATE "$([System.DateTime]::Now.ToString(`ddd MMM dd HH':'mm':'ss yyyy`))"</_DATEValue>
+@@ -56,25 +76,17 @@
+       <_PLATFORMValue Condition="$(Platform)=='Win32'">#define PLATFORM "VC-WIN32"</_PLATFORMValue>
+       <_PLATFORMValue Condition="$(Platform)=='x64'">#define PLATFORM "VC-WIN64A"</_PLATFORMValue>
+     </PropertyGroup>
+-    <WriteLinesToFile File="$(IntDir)\buildinf.h"
+-                      Lines="$(_DATEValue);$(_CFLAGSValue);$(_PLATFORMValue)"
+-                      Overwrite="true" />
+-    <Message Text="Updating buildinf.h:
+-    $(_DATEValue)
+-    $(_CFLAGSValue)
+-    $(_PLATFORMValue)" Importance="normal" />
++    <WriteLinesToFile File="$(IntDir)\buildinf.h" Lines="$(_DATEValue);$(_CFLAGSValue);$(_PLATFORMValue)" Overwrite="true" />
++    <Message Text="Updating buildinf.h:&#xA;    $(_DATEValue)&#xA;    $(_CFLAGSValue)&#xA;    $(_PLATFORMValue)" Importance="normal" />
+   </Target>
+-
+   <Target Name="SuppressOriginalBuildinfH" Condition="Exists('$(opensslDir)crypto\buildinf.h')" BeforeTargets="PrepareForBuild">
+     <Move SourceFiles="$(opensslDir)crypto\buildinf.h" DestinationFiles="$(opensslDir)crypto\buildinf.h.orig" />
+   </Target>
+-
+   <ItemGroup>
+     <ClCompile Include="$(opensslDir)crypto\cversion.c">
+       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+     </ClCompile>
+   </ItemGroup>
+-
+   <ItemGroup>
+     <!--
+     <ClCompile Include="$(opensslDir)apps\errstr.c" />
+@@ -847,7 +859,6 @@
+     <ClCompile Include="$(opensslDir)crypto\des\des_enc.c" />
+     <ClCompile Include="$(opensslDir)crypto\des\fcrypt_b.c" />
+   </ItemGroup>
+-
+   <ItemGroup Condition="$(Platform) == 'Win32'">
+     <NasmCompile Include="$(opensslDir)tmp32\aes-586.asm" />
+     <NasmCompile Include="$(opensslDir)tmp32\aesni-x86.asm" />
+@@ -897,11 +908,10 @@
+     <NasmCompile Include="$(opensslDir)tmp64\x86_64-mont.asm" />
+     <NasmCompile Include="$(opensslDir)tmp64\x86_64-mont5.asm" />
+   </ItemGroup>
+-
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <Target Name="Clean" />
+   <Target Name="CleanAll">
+     <Delete Files="$(TargetPath)" />
+     <RemoveDir Directories="$(IntDir)" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
+index 0691160..c9dffd4 100644
+--- a/PCbuild/pcbuild.sln
++++ b/PCbuild/pcbuild.sln
+@@ -1,5 +1,7 @@
+ Microsoft Visual Studio Solution File, Format Version 12.00
+-# Visual Studio 2010
++# Visual Studio 14
++VisualStudioVersion = 14.0.25420.1
++MinimumVisualStudioVersion = 10.0.40219.1
+ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{553EC33E-9816-4996-A660-5D6186A0B0B3}"
+ 	ProjectSection(SolutionItems) = preProject
+ 		..\Modules\getbuildinfo.c = ..\Modules\getbuildinfo.c
+@@ -11,20 +13,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pythoncore", "pythoncore.vc
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pythonw", "pythonw.vcxproj", "{F4229CC3-873C-49AE-9729-DD308ED4CD4A}"
+ EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "w9xpopen", "w9xpopen.vcxproj", "{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}"
+-EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winsound", "winsound.vcxproj", "{28B5D777-DDF2-4B6B-B34F-31D938813856}"
+-EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_bsddb", "_bsddb.vcxproj", "{B4D38F3F-68FB-42EC-A45D-E00657BB3627}"
+-EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_ctypes", "_ctypes.vcxproj", "{0E9791DB-593A-465F-98BC-681011311618}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_ctypes_test", "_ctypes_test.vcxproj", "{9EC7190A-249F-4180-A900-548FDCF3055F}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_elementtree", "_elementtree.vcxproj", "{17E1E049-C309-4D79-843F-AE483C264AEA}"
+ EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_msi", "_msi.vcxproj", "{31FFC478-7B4A-43E8-9954-8D03E2187E9C}"
+-EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_socket", "_socket.vcxproj", "{86937F53-C189-40EF-8CE8-8759D8E7D480}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_sqlite3", "_sqlite3.vcxproj", "{13CECB97-4119-4316-9D42-8534019A5A44}"
+@@ -33,8 +27,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_ssl", "_ssl.vcxproj", "{C6
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_testcapi", "_testcapi.vcxproj", "{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}"
+ EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_tkinter", "_tkinter.vcxproj", "{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}"
+-EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bz2", "bz2.vcxproj", "{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "select", "select.vcxproj", "{18CAE28C-B454-46C1-87A0-493D91D97F03}"
+@@ -43,20 +35,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unicodedata", "unicodedata.
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pyexpat", "pyexpat.vcxproj", "{D06B6426-4762-44CC-8BAD-D79052507F2F}"
+ EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bdist_wininst", "..\PC\bdist_wininst\bdist_wininst.vcxproj", "{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}"
+-EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_hashlib", "_hashlib.vcxproj", "{447F05A8-F581-4CAC-A466-5AC7936E207E}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite3", "sqlite3.vcxproj", "{A1A295E5-463C-437F-81CA-1F32367685DA}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_multiprocessing", "_multiprocessing.vcxproj", "{9E48B300-37D1-11DD-8C41-005056C00008}"
+ EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tcl", "tcl.vcxproj", "{B5FD6F1D-129E-4BFF-9340-03606FAC7283}"
+-EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tix", "tix.vcxproj", "{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}"
+-EndProject
+-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tk", "tk.vcxproj", "{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}"
+-EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libeay", "libeay.vcxproj", "{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}"
+ EndProject
+ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssleay", "ssleay.vcxproj", "{10615B24-73BF-4EFA-93AA-236916321317}"
+@@ -121,70 +105,6 @@ Global
+ 		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Release|Win32.Build.0 = Release|Win32
+ 		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Release|x64.ActiveCfg = Release|x64
+ 		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Release|x64.Build.0 = Release|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|Win32.Build.0 = Debug|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|x64.ActiveCfg = Debug|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|x64.Build.0 = Debug|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|x64.Build.0 = PGInstrument|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGUpdate|x64.Build.0 = PGUpdate|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Release|Win32.ActiveCfg = Release|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Release|Win32.Build.0 = Release|Win32
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Release|x64.ActiveCfg = Release|x64
+-		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Release|x64.Build.0 = Release|x64
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|Win32.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|Win32.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|x64.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|x64.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|Win32.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|Win32.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|x64.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|x64.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGUpdate|Win32.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGUpdate|Win32.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGUpdate|x64.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGUpdate|x64.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Release|Win32.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Release|Win32.Build.0 = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Release|x64.ActiveCfg = Release|Win32
+-		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Release|x64.Build.0 = Release|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|Win32.Build.0 = Debug|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|x64.ActiveCfg = Debug|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|x64.Build.0 = Debug|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|x64.Build.0 = PGInstrument|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGUpdate|x64.Build.0 = PGUpdate|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Release|Win32.ActiveCfg = Release|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Release|Win32.Build.0 = Release|Win32
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Release|x64.ActiveCfg = Release|x64
+-		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Release|x64.Build.0 = Release|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Debug|Win32.Build.0 = Debug|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Debug|x64.ActiveCfg = Debug|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Debug|x64.Build.0 = Debug|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGInstrument|x64.Build.0 = PGInstrument|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.PGUpdate|x64.Build.0 = PGUpdate|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Release|Win32.ActiveCfg = Release|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Release|Win32.Build.0 = Release|Win32
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Release|x64.ActiveCfg = Release|x64
+-		{B4D38F3F-68FB-42EC-A45D-E00657BB3627}.Release|x64.Build.0 = Release|x64
+ 		{0E9791DB-593A-465F-98BC-681011311618}.Debug|Win32.ActiveCfg = Debug|Win32
+ 		{0E9791DB-593A-465F-98BC-681011311618}.Debug|Win32.Build.0 = Debug|Win32
+ 		{0E9791DB-593A-465F-98BC-681011311618}.Debug|x64.ActiveCfg = Debug|x64
+@@ -233,22 +153,6 @@ Global
+ 		{17E1E049-C309-4D79-843F-AE483C264AEA}.Release|Win32.Build.0 = Release|Win32
+ 		{17E1E049-C309-4D79-843F-AE483C264AEA}.Release|x64.ActiveCfg = Release|x64
+ 		{17E1E049-C309-4D79-843F-AE483C264AEA}.Release|x64.Build.0 = Release|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|Win32.Build.0 = Debug|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|x64.ActiveCfg = Debug|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|x64.Build.0 = Debug|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|x64.Build.0 = PGInstrument|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGUpdate|x64.Build.0 = PGUpdate|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Release|Win32.ActiveCfg = Release|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Release|Win32.Build.0 = Release|Win32
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Release|x64.ActiveCfg = Release|x64
+-		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Release|x64.Build.0 = Release|x64
+ 		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|Win32.ActiveCfg = Debug|Win32
+ 		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|Win32.Build.0 = Debug|Win32
+ 		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|x64.ActiveCfg = Debug|x64
+@@ -313,22 +217,6 @@ Global
+ 		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Release|Win32.Build.0 = Release|Win32
+ 		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Release|x64.ActiveCfg = Release|x64
+ 		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Release|x64.Build.0 = Release|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|Win32.Build.0 = Debug|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|x64.ActiveCfg = Debug|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|x64.Build.0 = Debug|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|x64.Build.0 = PGInstrument|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGUpdate|x64.Build.0 = PGUpdate|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Release|Win32.ActiveCfg = Release|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Release|Win32.Build.0 = Release|Win32
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Release|x64.ActiveCfg = Release|x64
+-		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Release|x64.Build.0 = Release|x64
+ 		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|Win32.ActiveCfg = Debug|Win32
+ 		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|Win32.Build.0 = Debug|Win32
+ 		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|x64.ActiveCfg = Debug|x64
+@@ -393,14 +281,6 @@ Global
+ 		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Release|Win32.Build.0 = Release|Win32
+ 		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Release|x64.ActiveCfg = Release|x64
+ 		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Release|x64.Build.0 = Release|x64
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Debug|Win32.ActiveCfg = Release|Win32
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Debug|x64.ActiveCfg = Release|x64
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGInstrument|Win32.ActiveCfg = Release|Win32
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGInstrument|x64.ActiveCfg = Release|x64
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGUpdate|Win32.ActiveCfg = Release|Win32
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGUpdate|x64.ActiveCfg = Release|x64
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Release|Win32.ActiveCfg = Release|Win32
+-		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Release|x64.ActiveCfg = Release|x64
+ 		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|Win32.ActiveCfg = Debug|Win32
+ 		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|Win32.Build.0 = Debug|Win32
+ 		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|x64.ActiveCfg = Debug|x64
+@@ -449,54 +329,6 @@ Global
+ 		{9E48B300-37D1-11DD-8C41-005056C00008}.Release|Win32.Build.0 = Release|Win32
+ 		{9E48B300-37D1-11DD-8C41-005056C00008}.Release|x64.ActiveCfg = Release|x64
+ 		{9E48B300-37D1-11DD-8C41-005056C00008}.Release|x64.Build.0 = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Debug|Win32.Build.0 = Debug|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Debug|x64.ActiveCfg = Debug|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Debug|x64.Build.0 = Debug|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGInstrument|Win32.ActiveCfg = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGInstrument|Win32.Build.0 = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGInstrument|x64.ActiveCfg = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGInstrument|x64.Build.0 = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGUpdate|Win32.ActiveCfg = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGUpdate|Win32.Build.0 = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGUpdate|x64.ActiveCfg = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.PGUpdate|x64.Build.0 = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Release|Win32.ActiveCfg = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Release|Win32.Build.0 = Release|Win32
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Release|x64.ActiveCfg = Release|x64
+-		{B5FD6F1D-129E-4BFF-9340-03606FAC7283}.Release|x64.Build.0 = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Debug|Win32.Build.0 = Debug|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Debug|x64.ActiveCfg = Debug|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Debug|x64.Build.0 = Debug|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGInstrument|Win32.ActiveCfg = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGInstrument|Win32.Build.0 = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGInstrument|x64.ActiveCfg = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGInstrument|x64.Build.0 = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGUpdate|Win32.ActiveCfg = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGUpdate|Win32.Build.0 = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGUpdate|x64.ActiveCfg = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.PGUpdate|x64.Build.0 = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Release|Win32.ActiveCfg = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Release|Win32.Build.0 = Release|Win32
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Release|x64.ActiveCfg = Release|x64
+-		{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}.Release|x64.Build.0 = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Debug|Win32.ActiveCfg = Debug|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Debug|Win32.Build.0 = Debug|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Debug|x64.ActiveCfg = Debug|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Debug|x64.Build.0 = Debug|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGInstrument|Win32.ActiveCfg = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGInstrument|Win32.Build.0 = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGInstrument|x64.ActiveCfg = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGInstrument|x64.Build.0 = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGUpdate|Win32.ActiveCfg = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGUpdate|Win32.Build.0 = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGUpdate|x64.ActiveCfg = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.PGUpdate|x64.Build.0 = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Release|Win32.ActiveCfg = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Release|Win32.Build.0 = Release|Win32
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Release|x64.ActiveCfg = Release|x64
+-		{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}.Release|x64.Build.0 = Release|x64
+ 		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|Win32.ActiveCfg = Debug|Win32
+ 		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|Win32.Build.0 = Debug|Win32
+ 		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|x64.ActiveCfg = Debug|x64
+diff --git a/PCbuild/pyexpat.vcxproj b/PCbuild/pyexpat.vcxproj
+index a319ff9..9ec0ca3 100644
+--- a/PCbuild/pyexpat.vcxproj
++++ b/PCbuild/pyexpat.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -81,4 +105,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/python.vcxproj b/PCbuild/python.vcxproj
+index 4380fed..07af4db 100644
+--- a/PCbuild/python.vcxproj
++++ b/PCbuild/python.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <UseOfMfc>false</UseOfMfc>
+     <CharacterSet>MultiByte</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+@@ -83,10 +107,6 @@
+       <Project>{cf7ac3d1-e2df-41d2-bea6-1e2556cdea26}</Project>
+       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+     </ProjectReference>
+-    <ProjectReference Include="w9xpopen.vcxproj">
+-      <Project>{e9e0a1f6-0009-4e8c-b8f8-1b8f5d49a058}</Project>
+-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+-    </ProjectReference>
+   </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+@@ -106,4 +126,4 @@
+     </PropertyGroup>
+     <WriteLinesToFile File="$(PySourcePath)python.bat" Lines="$(_Content)" Overwrite="true" Condition="'$(_Content)' != '$(_ExistingContent)'" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
+index da5d5d9..64beae5 100644
+--- a/PCbuild/pythoncore.vcxproj
++++ b/PCbuild/pythoncore.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -44,6 +44,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <UseOfMfc>false</UseOfMfc>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+@@ -408,4 +432,4 @@
+   <Target Name="_WarnAboutToolset" BeforeTargets="PrepareForBuild" Condition="$(PlatformToolset) != 'v90'">
+     <Warning Text="Toolset $(PlatformToolset) is not used for official builds. Your build may have errors or incompatibilities." />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/pythonw.vcxproj b/PCbuild/pythonw.vcxproj
+index 8c5335c..f3a7e15 100644
+--- a/PCbuild/pythonw.vcxproj
++++ b/PCbuild/pythonw.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -48,6 +48,30 @@
+     <GenerateManifest Condition="'$(PlatformToolset)' == 'v90' or '$(BasePlatformToolset)' == 'v90'">true</GenerateManifest>
+     <EmbedManifest Condition="'$(PlatformToolset)' == 'v90' or '$(BasePlatformToolset)' == 'v90'">true</EmbedManifest>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+@@ -83,4 +107,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/select.vcxproj b/PCbuild/select.vcxproj
+index 1cae1ef..8d01939 100644
+--- a/PCbuild/select.vcxproj
++++ b/PCbuild/select.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -44,6 +44,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -76,4 +100,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/sqlite3.vcxproj b/PCbuild/sqlite3.vcxproj
+index 3720545..86f0f51 100644
+--- a/PCbuild/sqlite3.vcxproj
++++ b/PCbuild/sqlite3.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -46,6 +46,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+@@ -74,4 +98,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/ssleay.vcxproj b/PCbuild/ssleay.vcxproj
+index 9ad6733..d819d9f 100644
+--- a/PCbuild/ssleay.vcxproj
++++ b/PCbuild/ssleay.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -38,17 +38,37 @@
+     <ProjectGuid>{10615B24-73BF-4EFA-93AA-236916321317}</ProjectGuid>
+     <RootNamespace>ssleay</RootNamespace>
+   </PropertyGroup>
+-
+   <Import Project="python.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+-
+   <PropertyGroup Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
+   </PropertyGroup>
+-
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="openssl.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+-
+   <ItemGroup>
+     <!--
+     <ClCompile Include="$(opensslDir)ssl\bio_ssl.c" />
+@@ -109,11 +129,10 @@
+     <ClCompile Include="$(opensslDir)ssl\t1_srvr.c" />
+     <ClCompile Include="$(opensslDir)ssl\tls_srp.c" />
+   </ItemGroup>
+-
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <Target Name="Clean" />
+   <Target Name="CleanAll">
+     <Delete Files="$(TargetPath)" />
+     <RemoveDir Directories="$(IntDir)" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/tix.vcxproj b/PCbuild/tix.vcxproj
+index 5d2a66f..4450b9e 100644
+--- a/PCbuild/tix.vcxproj
++++ b/PCbuild/tix.vcxproj
+@@ -38,23 +38,18 @@
+     <ProjectGuid>{C5A3E7FB-9695-4B2E-960B-1D9F43F1E555}</ProjectGuid>
+     <RootNamespace>tix</RootNamespace>
+   </PropertyGroup>
+-
+   <Import Project="python.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <Import Project="tcltk.props" />
+-
+   <PropertyGroup Label="Configuration">
+     <ConfigurationType>Makefile</ConfigurationType>
+     <OutDir>$(tcltkDir)</OutDir>
+     <TargetPath>$(tixDLLPath)</TargetPath>
+   </PropertyGroup>
+-
+   <ItemGroup>
+     <ExpectedOutputs Include="$(TargetPath)" />
+   </ItemGroup>
+-
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+-
+   <PropertyGroup>
+     <TkOpts>msvcrt</TkOpts>
+     <TkOpts Condition="$(Configuration) == 'Debug'">symbols,msvcrt</TkOpts>
+@@ -72,23 +67,16 @@ nmake /nologo -f makefile.vc MACHINE=$(TclMachine) $(DebugFlags) $(TclShortVersi
+ </NMakeBuildCommandLine>
+     <NMakeCleanCommandLine>rmdir /q/s "$(OutDir.TrimEnd(`\`))"</NMakeCleanCommandLine>
+   </PropertyGroup>
+-
+   <ItemGroup>
+-    <ProjectReference Include="tcl.vcxproj">
+-      <Project>{b5fd6f1d-129e-4bff-9340-03606fac7283}</Project>
+-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+-    </ProjectReference>
+     <ProjectReference Include="tk.vcxproj">
+       <Project>{7e85eccf-a72c-4da4-9e52-884508e80ba1}</Project>
+       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+     </ProjectReference>
+   </ItemGroup>
+-
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+-
+   <Target Name="Clean" />
+   <Target Name="CleanAll">
+     <RemoveDir Directories="$(OutDir)" />
+     <RemoveDir Directories="$(IntDir)" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/tk.vcxproj b/PCbuild/tk.vcxproj
+index 36f4f50..8a14e3d 100644
+--- a/PCbuild/tk.vcxproj
++++ b/PCbuild/tk.vcxproj
+@@ -38,27 +38,18 @@
+     <ProjectGuid>{7E85ECCF-A72C-4DA4-9E52-884508E80BA1}</ProjectGuid>
+     <RootNamespace>tk</RootNamespace>
+   </PropertyGroup>
+-
+   <Import Project="python.props" />
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <Import Project="tcltk.props" />
+-
+   <PropertyGroup Label="Configuration">
+     <ConfigurationType>Makefile</ConfigurationType>
+     <OutDir>$(tcltkDir)</OutDir>
+     <TargetPath>$(OutDir)bin\$(tkDLLName)</TargetPath>
+   </PropertyGroup>
+-
+   <ItemGroup>
+-    <ExpectedOutputs Include="
+-        $(OutDir)bin\$(tkDLLName);
+-        $(OutDir)include\tk.h;
+-        $(OutDir)lib\$(tkLibName);
+-        $(OutDir)lib\tk$(TkMajorVersion).$(TkMinorVersion)" />
++    <ExpectedOutputs Include="&#xA;        $(OutDir)bin\$(tkDLLName);&#xA;        $(OutDir)include\tk.h;&#xA;        $(OutDir)lib\$(tkLibName);&#xA;        $(OutDir)lib\tk$(TkMajorVersion).$(TkMinorVersion)" />
+   </ItemGroup>
+-
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+-
+   <PropertyGroup>
+     <TkOpts>msvcrt</TkOpts>
+     <TkOpts Condition="$(Configuration) == 'Debug'">symbols,msvcrt</TkOpts>
+@@ -75,21 +66,13 @@ nmake /nologo -f makefile.vc RC=rc MACHINE=$(TclMachine) OPTS=$(TkOpts) $(TkDirs
+ nmake /nologo -f makefile.vc RC=rc MACHINE=$(TclMachine) OPTS=$(TkOpts) $(TkDirs) $(DebugFlags) install-binaries install-libraries
+ </NMakeBuildCommandLine>
+   </PropertyGroup>
+-  <ItemGroup>
+-    <ProjectReference Include="tcl.vcxproj">
+-      <Project>{b5fd6f1d-129e-4bff-9340-03606fac7283}</Project>
+-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+-    </ProjectReference>
+-  </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+-
+   <Target Name="CopyDll" Inputs="$(OutDir)\bin\$(tkDLLName)" Outputs="$(BuildPath)$(tkDLLName)" AfterTargets="Build">
+     <Copy SourceFiles="$(OutDir)\bin\$(tkDLLName)" DestinationFiles="$(BuildPath)$(tkDLLName)" />
+   </Target>
+-
+   <Target Name="Clean" />
+   <Target Name="CleanAll">
+     <Delete Files="$(TargetPath);$(BuildPath)$(tkDLLName)" />
+     <RemoveDir Directories="$(IntDir)" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/unicodedata.vcxproj b/PCbuild/unicodedata.vcxproj
+index 92df09b..b98a52a 100644
+--- a/PCbuild/unicodedata.vcxproj
++++ b/PCbuild/unicodedata.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -80,4 +104,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/w9xpopen.vcxproj b/PCbuild/w9xpopen.vcxproj
+index 4dd9cca..1264fdb 100644
+--- a/PCbuild/w9xpopen.vcxproj
++++ b/PCbuild/w9xpopen.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -47,6 +47,30 @@
+     <UseOfMfc>false</UseOfMfc>
+     <CharacterSet>MultiByte</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+   </ImportGroup>
+@@ -74,4 +98,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/PCbuild/winsound.vcxproj b/PCbuild/winsound.vcxproj
+index 211e676..033a99a 100644
+--- a/PCbuild/winsound.vcxproj
++++ b/PCbuild/winsound.vcxproj
+@@ -1,5 +1,5 @@
+ ∩╗┐<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Debug|Win32">
+       <Configuration>Debug</Configuration>
+@@ -45,6 +45,30 @@
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
+     <CharacterSet>NotSet</CharacterSet>
+   </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
++  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
++    <PlatformToolset>v140</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <PropertyGroup>
+     <TargetExt>.pyd</TargetExt>
+@@ -76,4 +100,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/Python/pystate.c b/Python/pystate.c
+index eb992c1..8505729 100644
+--- a/Python/pystate.c
++++ b/Python/pystate.c
+@@ -26,6 +26,10 @@ the expense of doing their own locking).
+ extern "C" {
+ #endif
+ 
++#if defined(_MSC_VER)
++#include <intrin.h>
++#endif
++
+ #ifdef WITH_THREAD
+ #include "pythread.h"
+ static PyThread_type_lock head_mutex = NULL; /* Protects interp->tstate_head */
+@@ -44,6 +48,7 @@ static int autoTLSkey = 0;
+ #define HEAD_UNLOCK() /* Nothing */
+ #endif
+ 
++
+ static PyInterpreterState *interp_head = NULL;
+ 
+ PyThreadState *_PyThreadState_Current = NULL;
+@@ -53,6 +58,23 @@ PyThreadFrameGetter _PyThreadState_GetFrame = NULL;
+ static void _PyGILState_NoteThreadState(PyThreadState* tstate);
+ #endif
+ 
++inline PyThreadState* pythreadstate_swap(PyThreadState* newts)
++{
++  PyThreadState *oldts = NULL;
++  do {
++    oldts = _PyThreadState_Current;
++  } while (_InterlockedCompareExchangePointer(&_PyThreadState_Current, newts, oldts) != oldts);
++  return oldts;
++}
++
++inline PyThreadState* pythreadstate_get()
++{
++  PyThreadState *oldts = NULL;
++  do {
++    oldts = _PyThreadState_Current;
++  } while (_InterlockedCompareExchangePointer(&_PyThreadState_Current, oldts, oldts) != oldts);
++  return oldts;
++}
+ 
+ PyInterpreterState *
+ PyInterpreterState_New(void)
+@@ -296,7 +318,8 @@ tstate_delete_common(PyThreadState *tstate)
+ void
+ PyThreadState_Delete(PyThreadState *tstate)
+ {
+-    if (tstate == _PyThreadState_Current)
++    
++    if (tstate == pythreadstate_get())
+         Py_FatalError("PyThreadState_Delete: tstate is still current");
+     tstate_delete_common(tstate);
+ #ifdef WITH_THREAD
+@@ -310,11 +333,11 @@ PyThreadState_Delete(PyThreadState *tstate)
+ void
+ PyThreadState_DeleteCurrent()
+ {
+-    PyThreadState *tstate = _PyThreadState_Current;
++    PyThreadState *tstate = pythreadstate_get();
+     if (tstate == NULL)
+         Py_FatalError(
+             "PyThreadState_DeleteCurrent: no current tstate");
+-    _PyThreadState_Current = NULL;
++    pythreadstate_swap(NULL);
+     if (autoInterpreterState && PyThread_get_key_value(autoTLSkey) == tstate)
+         PyThread_delete_key_value(autoTLSkey);
+     tstate_delete_common(tstate);
+@@ -326,19 +349,19 @@ PyThreadState_DeleteCurrent()
+ PyThreadState *
+ PyThreadState_Get(void)
+ {
+-    if (_PyThreadState_Current == NULL)
++    PyThreadState *ts = pythreadstate_get();
++    if (ts == NULL)
+         Py_FatalError("PyThreadState_Get: no current thread");
+ 
+-    return _PyThreadState_Current;
++    return ts;
+ }
+ 
+ 
+ PyThreadState *
+ PyThreadState_Swap(PyThreadState *newts)
+ {
+-    PyThreadState *oldts = _PyThreadState_Current;
++    PyThreadState* oldts = pythreadstate_swap(newts);
+ 
+-    _PyThreadState_Current = newts;
+     /* It should not be possible for more than one thread state
+        to be used for a thread.  Check this the best we can in debug
+        builds.
+@@ -367,16 +390,17 @@ PyThreadState_Swap(PyThreadState *newts)
+ PyObject *
+ PyThreadState_GetDict(void)
+ {
+-    if (_PyThreadState_Current == NULL)
++    PyThreadState* ts = pythreadstate_get();
++    if (ts == NULL)
+         return NULL;
+ 
+-    if (_PyThreadState_Current->dict == NULL) {
++    if (ts->dict == NULL) {
+         PyObject *d;
+-        _PyThreadState_Current->dict = d = PyDict_New();
++        ts->dict = d = PyDict_New();
+         if (d == NULL)
+             PyErr_Clear();
+     }
+-    return _PyThreadState_Current->dict;
++    return ts->dict;
+ }
+ 
+ 
+@@ -514,7 +538,7 @@ PyThreadState_IsCurrent(PyThreadState *tstate)
+     /* On Windows at least, simple reads and writes to 32 bit values
+        are atomic.
+     */
+-    return tstate == _PyThreadState_Current;
++    return tstate == pythreadstate_get();
+ }
+ 
+ /* Internal initialization/finalization functions called by
+diff --git a/cmake/python-config.cmake b/cmake/python-config.cmake
+new file mode 100644
+index 0000000..cdbdc4d
+--- /dev/null
++++ b/cmake/python-config.cmake
+@@ -0,0 +1 @@
++include(${CMAKE_CURRENT_LIST_DIR}/python.cmake)
+\ No newline at end of file
+diff --git a/externals/openssl-1.0.2j/crypto/buildinf.h b/externals/openssl-1.0.2j/crypto/buildinf.h
+deleted file mode 100644
+index 1ef1a3a..0000000
+--- a/externals/openssl-1.0.2j/crypto/buildinf.h
++++ /dev/null
+@@ -1,19 +0,0 @@
+-#ifndef MK1MF_BUILD
+-  /* auto-generated by Configure for crypto/cversion.c:
+-   * for Unix builds, crypto/Makefile.ssl generates functional definitions;
+-   * Windows builds (and other mk1mf builds) compile cversion.c with
+-   * -DMK1MF_BUILD and use definitions added to this file by util/mk1mf.pl. */
+-  #error "Windows builds (PLATFORM=VC-WIN32) use mk1mf.pl-created Makefiles"
+-#endif
+-#ifdef MK1MF_PLATFORM_VC_WIN32
+-  /* auto-generated/updated by util/mk1mf.pl for crypto/cversion.c */
+-  #define CFLAGS "compiler: cl  /MD /Ox /O2 /Ob2 -DOPENSSL_THREADS  -DDSO_WIN32 -W3 -Gs0 -GF -Gy -nologo -DOPENSSL_SYSNAME_WIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -D_CRT_SECURE_NO_DEPRECATE -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_GF2m -DRC4_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DRMD160_ASM -DAES_ASM -DVPAES_ASM -DWHIRLPOOL_ASM -DGHASH_ASM -DOPENSSL_USE_APPLINK -I. -DOPENSSL_NO_IDEA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MD2 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_SSL2 -DOPENSSL_NO_KRB5 -DOPENSSL_NO_JPAKE -DOPENSSL_NO_WEAK_SSL_CIPHERS -DOPENSSL_NO_STATIC_ENGINE    "
+-  #define PLATFORM "VC-WIN32"
+-  #define DATE "Tue Oct 11 02:23:50 2016"
+-#endif
+-#ifdef MK1MF_PLATFORM_BC_NT
+-  /* auto-generated/updated by util/mk1mf.pl for crypto/cversion.c */
+-  #define CFLAGS "compiler: bcc32 -DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_IDEA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MD2 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_SSL2 -DOPENSSL_NO_KRB5 -DOPENSSL_NO_JPAKE -DOPENSSL_NO_WEAK_SSL_CIPHERS -DOPENSSL_NO_DYNAMIC_ENGINE    "
+-  #define PLATFORM "BC-NT"
+-  #define DATE "Tue Oct 11 02:23:51 2016"
+-#endif
