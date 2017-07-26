@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,662 @@
+@@ -0,0 +1,653 @@
 +cmake_minimum_required(VERSION 2.8.6)
 +
 +set(PYTHON_VERSION "3.5.2" CACHE STRING "The version of Python to build.")
@@ -262,14 +262,6 @@
 +    set(IS_PY2 0)
 +endif()
 +
-+# Convenience boolean variables to easily test the type of python library being build
-+set(BUILD_STATIC 1)
-+set(BUILD_SHARED 0)
-+if(BUILD_LIBPYTHON_SHARED)
-+  set(BUILD_STATIC 0)
-+  set(BUILD_SHARED 1)
-+endif()
-+
 +# Options depending of the python version
 +if(IS_PY2)
 +  option(Py_USING_UNICODE "Enable unicode support" ON)
@@ -300,10 +292,6 @@
 +# Proceed to the configure checks
 +include(cmake/ConfigureChecks.cmake)
 +
-+if(NOT BUILD_SHARED AND NOT BUILD_STATIC)
-+    message(FATAL_ERROR "One or both of BUILD_SHARED or BUILD_STATIC must be set")
-+endif()
-+
 +# Set PYTHONHOME
 +set(LIBDIR "Lib") # See Lib/distutils/sysconfig.py - function 'get_python_lib'
 +if(UNIX)
@@ -323,12 +311,15 @@
 +if(INSTALL_WINDOWS_TRADITIONAL)
 +    set(BIN_INSTALL_DIR .)                       # Contains the python executable
 +endif()
++set(LD_VERSION ${LIBPYTHON_VERSION}${ABIFLAGS})
 +set(CONFIG_INSTALL_DIR share/${LIBPYTHON})
 +set(EXTENSION_INSTALL_DIR ${PYTHONHOME}/lib-dynload)
++set(LIB_CONFIG_INSTALL_DIR ${PYTHONHOME}/config-${LD_VERSION})
++
 +if(INSTALL_WINDOWS_TRADITIONAL)
 +    set(EXTENSION_INSTALL_DIR DLLs)
 +endif()
-+set(INCLUDE_INSTALL_DIR include/${LIBPYTHON})
++set(INCLUDE_INSTALL_DIR include/python${LD_VERSION})
 +if(MSVC)
 +    set(INCLUDE_INSTALL_DIR include)
 +endif()
@@ -420,7 +411,7 @@
 +# Define python executable wrapper command to ensure
 +# python executable resolves the expected python library.
 +set(PYTHON_WRAPPER_COMMAND )
-+if(BUILD_SHARED AND UNIX)
++if(BUILD_LIBPYTHON_SHARED AND UNIX)
 +    set(_envvar LD_LIBRARY_PATH)
 +    if(APPLE)
 +        set(_envvar DYLD_LIBRARY_PATH)
@@ -553,7 +544,7 @@
 +                   ${BIN_BUILD_DIR}/Makefile @ONLY)
 +    if(INSTALL_DEVELOPMENT)
 +        install(FILES ${BIN_BUILD_DIR}/Makefile
-+                DESTINATION ${PYTHONHOME}/config/
++                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
 +                RENAME Makefile
 +                COMPONENT Development)
 +    endif()
@@ -561,7 +552,7 @@
 +    # Utility scripts
 +    if(INSTALL_DEVELOPMENT)
 +        install(FILES ${SRC_DIR}/install-sh ${SRC_DIR}/Modules/makesetup
-+                DESTINATION ${PYTHONHOME}/config/
++                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
 +                COMPONENT Development)
 +    endif()
 +
@@ -904,7 +895,7 @@
 +   limitations under the License.
 +
 --- /dev/null
-+++ b/README.rst
++++ b/README.cmake.rst
 @@ -0,0 +1,255 @@
 +CPython CMake Buildsystem
 +=========================
@@ -953,7 +944,7 @@
 +
 +.. note::
 +
-+  By default, the build system will download the python 2.7.12 source from
++  By default, the build system will download the python 3.5.2 source from
 +  http://www.python.org/ftp/python/
 +
 +
@@ -966,7 +957,7 @@
 +
 +::
 +
-+  PYTHON_VERSION=major.minor.patch (defaults to 2.7.12)
++  PYTHON_VERSION=major.minor.patch (defaults to 3.5.2)
 +    The version of Python to build.
 +
 +  CMAKE_BUILD_TYPE=Debug|Release
@@ -3963,7 +3954,7 @@
 +        set_property(GLOBAL APPEND PROPERTY extension_${name}_link_libraries ${ADD_PYTHON_EXTENSION_LIBRARIES})
 +        set_property(GLOBAL APPEND PROPERTY extension_${name}_includedirs ${ADD_PYTHON_EXTENSION_INCLUDEDIRS})
 +        set_property(GLOBAL APPEND PROPERTY extension_${name}_definitions ${ADD_PYTHON_EXTENSION_DEFINITIONS})
-+    elseif(WIN32 AND NOT BUILD_SHARED)
++    elseif(WIN32 AND NOT BUILD_LIBPYTHON_SHARED)
 +        # Extensions cannot be built against a static libpython on windows
 +    else()
 +
@@ -4417,14 +4408,20 @@
 +endif()
 --- /dev/null
 +++ b/cmake/PythonConfig.cmake.in
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,51 @@
 +#  PYTHON_USE_STATIC_LIB    - Set to ON to force the use of the static
 +#                             library.  Default is OFF.
 +
 +@PACKAGE_INIT@
 +
-+set(PYTHON_BUILD_SHARED "@BUILD_SHARED@")
-+set(PYTHON_BUILD_STATIC "@BUILD_STATIC@")
++set(BUILD_LIBPYTHON_SHARED @BUILD_LIBPYTHON_SHARED@)
++if(BUILD_LIBPYTHON_SHARED)
++  set(PYTHON_BUILD_SHARED 1)
++  set(PYTHON_BUILD_STATIC 0)
++else()
++  set(PYTHON_BUILD_SHARED 0)
++  set(PYTHON_BUILD_STATIC 1)
++endif()
 +
 +set_and_check(PYTHON_CONFIG_DIR "@PACKAGE_CONFIG_DIR_CONFIG@")
 +set_and_check(PYTHON_INCLUDE_DIR "@PACKAGE_INCLUDE_DIR_CONFIG@")
@@ -7925,7 +7922,7 @@
 +                  _ctypes/libffi_msvc/prep_cif.c
 +                  _ctypes/libffi_msvc/ffi.c
 +                  _ctypes/libffi_msvc/${_ctype_arch_impl}
-+          REQUIRES BUILD_SHARED
++          REQUIRES BUILD_LIBPYTHON_SHARED
 +          INCLUDEDIRS ${SRC_DIR}/Modules/_ctypes/libffi_msvc
 +        )
 +    endif()
@@ -9500,7 +9497,7 @@
 +    endif()
 +endfunction()
 +
-+if(BUILD_SHARED)
++if(BUILD_LIBPYTHON_SHARED)
 +    add_libpython(libpython-shared SHARED 1 Runtime)
 +    set_target_properties(libpython-shared PROPERTIES
 +        ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
@@ -9585,7 +9582,7 @@
 +
 +endif()
 +
-+if(BUILD_STATIC)
++if(NOT BUILD_LIBPYTHON_SHARED)
 +    add_libpython(libpython-static STATIC ${INSTALL_DEVELOPMENT} Development)
 +    if(HAVE_TARGET_COMPILE_DEFINITIONS)
 +        target_compile_definitions(libpython-static PUBLIC Py_NO_ENABLE_SHARED)
@@ -9859,7 +9856,7 @@
 +
 +# Link against the shared libpython if it was built, otherwise use the static
 +# version.
-+if(BUILD_SHARED)
++if(BUILD_LIBPYTHON_SHARED)
 +    target_link_libraries(python libpython-shared)
 +else()
 +    target_link_libraries(python libpython-static)
