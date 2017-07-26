@@ -83,3 +83,15 @@
  #			elif defined(Py_LIMITED_API)
  #				pragma comment(lib,"python3.lib")
  #			else
+@@ -333,9 +333,11 @@
+ #	endif
+ #endif
+ 
++#if 0
+ #ifdef _DEBUG
+ #	define Py_DEBUG
+ #endif
++#endif
+ 
+ 
+ #ifdef MS_WIN32
