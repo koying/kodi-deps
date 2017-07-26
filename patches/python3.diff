@@ -1,0 +1,85 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -188,8 +188,13 @@
+ set(_download_2.7.10_md5 "d7547558fd673bd9d38e2108c6b42521")
+ set(_download_2.7.11_md5 "6b6076ec9e93f05dd63e47eb9c15728b")
+ set(_download_2.7.12_md5 "88d61f82e3616a4be952828b3694109d")
++set(_download_2.7.13_md5 "17add4bf0ad0ec2f08e0cae6d205c700")
++set(_download_3.4.6_md5 "74a7cbe1bd9652013ae6087ef346b9da")
+ set(_download_3.5.1_md5 "be78e48cdfc1a7ad90efff146dce6cfe")
+ set(_download_3.5.2_md5 "3fe8434643a78630c61c6464fe2e7e72")
++set(_download_3.5.3_md5 "6192f0e45f02575590760e68c621a488")
++set(_download_3.6.0_md5 "3f7062ccf8be76491884d0e47ac8b251")
++set(_download_3.6.1_md5 "2d0fc9f3a5940707590e07f03ecb08b9")
+ set(_extracted_dir "Python-${PY_VERSION}")
+ 
+ if(NOT EXISTS ${SRC_DIR}/${_landmark} AND DOWNLOAD_SOURCES)
+--- a/cmake/extensions/CMakeLists.txt
++++ b/cmake/extensions/CMakeLists.txt
+@@ -65,6 +65,10 @@
+ add_python_extension(future_builtins ${WIN32_BUILTIN} REQUIRES IS_PY2 SOURCES future_builtins.c)
+ add_python_extension(_heapq ${WIN32_BUILTIN} SOURCES _heapqmodule.c)
+ add_python_extension(_hotshot ${WIN32_BUILTIN} REQUIRES IS_PY2 SOURCES _hotshot.c)
++set(winconsoleio)
++if(WIN32)
++  list(APPEND winconsoleio _io/winconsoleio.c)
++endif()
+ add_python_extension(_io BUILTIN SOURCES
+     _io/_iomodule.c
+     _io/bufferedio.c
+@@ -73,6 +77,7 @@
+     _io/iobase.c
+     _io/stringio.c
+     _io/textio.c
++    ${winconsoleio}
+ )
+ add_python_extension(itertools ${WIN32_BUILTIN} SOURCES itertoolsmodule.c) # Functions creating iterators for efficient looping
+ add_python_extension(_json ${WIN32_BUILTIN} SOURCES _json.c)
+--- a/cmake/libpython/CMakeLists.txt
++++ b/cmake/libpython/CMakeLists.txt
+@@ -369,14 +369,14 @@
+ endif()
+ 
+ set(LIBPYTHON_FROZEN_SOURCES )
+-if(IS_PY3)
++if(IS_PY3 AND OFF)
+ 
+ # Build _freeze_importlib executable
+ add_executable(_freeze_importlib
+   ${SRC_DIR}/Programs/_freeze_importlib.c
+   ${LIBPYTHON_OMIT_FROZEN_SOURCES}
+   )
+-target_link_libraries(_freeze_importlib ${LIBPYTHON_TARGET_LIBRARIES})
++target_link_libraries(_freeze_importlib ${LIBPYTHON_TARGET_LIBRARIES} Shlwapi version)
+ 
+ # Freeze modules
+ set(LIBPYTHON_FROZEN_SOURCES
+@@ -438,7 +438,7 @@
+ # Build python libraries
+ function(add_libpython name type install component)
+     add_library(${name} ${type} ${LIBPYTHON_SOURCES})
+-    target_link_libraries(${name} ${LIBPYTHON_TARGET_LIBRARIES})
++    target_link_libraries(${name} ${LIBPYTHON_TARGET_LIBRARIES} Shlwapi version)
+ 
+     if(MSVC)
+         # Explicitly disable COMDAT folding. Note that this was not required
+@@ -489,7 +489,7 @@
+ 
+     set(targetname "libpython3-shared")
+ 
+-    if(IS_PY3 AND MSVC)
++    if(IS_PY3 AND MSVC AND OFF)
+         # XXX Add BuildPython3_dDef
+ 
+         # Generate 'python3stub.def'
+--- a/PC/pyconfig.h
++++ b/PC/pyconfig.h
+@@ -290,7 +290,7 @@
+ 			their Makefile (other compilers are generally
+ 			taken care of by distutils.) */
+ #			if defined(_DEBUG)
+-#				pragma comment(lib,"python36_d.lib")
++#				pragma comment(lib,"python36.lib")
+ #			elif defined(Py_LIMITED_API)
+ #				pragma comment(lib,"python3.lib")
+ #			else
