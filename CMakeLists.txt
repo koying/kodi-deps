@@ -717,8 +717,9 @@ ExternalProject_Add(libjpeg-turbo
 	URL https://sourceforge.net/projects/libjpeg-turbo/files/1.5.2/libjpeg-turbo-1.5.2.tar.gz
 	URL_HASH SHA256=9098943b270388727ae61de82adec73cf9f0dbb240b3bc8b172595ebf405b528
 	PATCH_COMMAND 
-		COMMAND copy CMakeLists.txt CMakeLists.orig.txt 
+		COMMAND ${CMAKE_COMMAND} -E copy CMakeLists.txt CMakeLists.orig.txt 
 		COMMAND ${PATCH} -p1 -i ${CMAKE_SOURCE_DIR}/patches/$(TargetName).diff
+		COMMAND ${PATCH} -p1 -i ${CMAKE_SOURCE_DIR}/patches/$(TargetName)/0001-fix-uwp-api.patch
 	CMAKE_ARGS
 		${ADDITIONAL_ARGS}
 		-DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_PREFIX}
@@ -726,6 +727,7 @@ ExternalProject_Add(libjpeg-turbo
 		-DINSTALL_DOC:BOOL=OFF
 		-DWITH_JPEG8:BOOL=ON
 		-DWITH_SIMD:BOOL=OFF
+		-DWITH_CRT_DLL:BOOL=ON
 )
 
 ExternalProject_Add(pillow
