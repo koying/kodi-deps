@@ -781,7 +781,9 @@ ExternalProject_Add(libbluray
 	DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/downloads
 	URL ftp://ftp.videolan.org/pub/videolan/libbluray/1.0.1/libbluray-1.0.1.tar.bz2
 	URL_HASH SHA512=798d38cc95af87599af5838e5c288f2536a73b33191db8ff3774cf7eb5b835006bea83693f016d47dff551001b98527d8b1f14051f673fb3b28073b820e325d7
-	PATCH_COMMAND ${PATCH} -p1 -i ${CMAKE_SOURCE_DIR}/patches/$(TargetName).diff
+	PATCH_COMMAND 
+		COMMAND ${PATCH} -p1 -i ${CMAKE_SOURCE_DIR}/patches/$(TargetName).diff
+		COMMAND ${PATCH} -p1 -i ${CMAKE_SOURCE_DIR}/patches/$(TargetName)/0001-fix-uwp-api.patch
 	CMAKE_ARGS
 		${ADDITIONAL_ARGS}
 		-DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_PREFIX}
