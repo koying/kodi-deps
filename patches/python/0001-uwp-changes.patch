@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5326fffde9..61f8d24497 100644
+index 5326fff..61f8d24 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -23,7 +23,7 @@ if(APPLE)
@@ -12,7 +12,7 @@ index 5326fffde9..61f8d24497 100644
  if(POLICY CMP0042)
      cmake_policy(SET CMP0042 OLD)
 diff --git a/Include/fileobject.h b/Include/fileobject.h
-index 1b540f902f..b06768ef20 100644
+index 1b540f9..b06768e 100644
 --- a/Include/fileobject.h
 +++ b/Include/fileobject.h
 @@ -70,7 +70,7 @@ size_t Py_UniversalNewlineFread(char *, size_t, FILE *, PyObject *);
@@ -25,7 +25,7 @@ index 1b540f902f..b06768ef20 100644
   * and sets errno to EBADF if it isn't.  This is to avoid Assertions
   * from various functions in the Windows CRT beginning with
 diff --git a/Include/pyerrors.h b/Include/pyerrors.h
-index 51134ef7b2..f56b1cdc3f 100644
+index 51134ef..f56b1cd 100644
 --- a/Include/pyerrors.h
 +++ b/Include/pyerrors.h
 @@ -197,8 +197,10 @@ PyAPI_FUNC(PyObject *) PyErr_Format(PyObject *, const char *, ...)
@@ -49,7 +49,7 @@ index 51134ef7b2..f56b1cdc3f 100644
      PyObject *,int, const char *);
  PyAPI_FUNC(PyObject *) PyErr_SetExcFromWindowsErrWithUnicodeFilename(
 diff --git a/Include/pyport.h b/Include/pyport.h
-index 0c78a1e5b6..8dda7c642b 100644
+index 0c78a1e..8dda7c6 100644
 --- a/Include/pyport.h
 +++ b/Include/pyport.h
 @@ -397,6 +397,12 @@ typedef Py_intptr_t     Py_ssize_t;
@@ -84,7 +84,7 @@ index 0c78a1e5b6..8dda7c642b 100644
  #               ifdef Py_BUILD_CORE
  #                       define PyAPI_FUNC(RTYPE) __declspec(dllexport) RTYPE
 diff --git a/Include/pythonrun.h b/Include/pythonrun.h
-index cfb02b01ec..8599eb25d0 100644
+index cfb02b0..8599eb2 100644
 --- a/Include/pythonrun.h
 +++ b/Include/pythonrun.h
 @@ -158,7 +158,7 @@ PyAPI_DATA(PyThreadState*) _PyOS_ReadlineTState;
@@ -97,7 +97,7 @@ index cfb02b01ec..8599eb25d0 100644
  #define USE_STACKCHECK
  #endif
 diff --git a/Modules/_ctypes/callbacks.c b/Modules/_ctypes/callbacks.c
-index ef1f0019db..f2d4d82039 100644
+index ef1f001..f2d4d82 100644
 --- a/Modules/_ctypes/callbacks.c
 +++ b/Modules/_ctypes/callbacks.c
 @@ -217,7 +217,7 @@ static void _CallPythonObject(void *mem,
@@ -110,10 +110,23 @@ index ef1f0019db..f2d4d82039 100644
      PyGILState_STATE state = PyGILState_Ensure();
  #endif
 diff --git a/Modules/_ctypes/callproc.c b/Modules/_ctypes/callproc.c
-index 3a12eb603e..60d06f1778 100644
+index 3a12eb6..0e794d0 100644
 --- a/Modules/_ctypes/callproc.c
 +++ b/Modules/_ctypes/callproc.c
-@@ -242,7 +242,11 @@ static TCHAR *FormatError(DWORD code)
+@@ -225,6 +225,12 @@ set_errno(PyObject *self, PyObject *args)
+ #ifdef MS_WIN32
+ 
+ static PyObject *
++_kernel32_get_last_error(PyObject *self, PyObject *args)
++{
++    return PyInt_FromLong(GetLastError());
++}
++
++static PyObject *
+ get_last_error(PyObject *self, PyObject *args)
+ {
+     return get_error_internal(self, args, 1);
+@@ -242,7 +248,11 @@ static TCHAR *FormatError(DWORD code)
  {
      TCHAR *lpMsgBuf;
      DWORD n;
@@ -126,7 +139,7 @@ index 3a12eb603e..60d06f1778 100644
                        NULL,
                        code,
                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), /* Default language */
-@@ -781,7 +785,7 @@ static int _call_function_pointer(int flags,
+@@ -781,7 +791,7 @@ static int _call_function_pointer(int flags,
      PyThreadState *_save = NULL; /* For Py_BLOCK_THREADS and Py_UNBLOCK_THREADS */
  #endif
      PyObject *error_object = NULL;
@@ -135,7 +148,7 @@ index 3a12eb603e..60d06f1778 100644
      ffi_cif cif;
      int cc;
  #ifdef MS_WIN32
-@@ -1002,6 +1006,7 @@ error:
+@@ -1002,6 +1012,7 @@ error:
  static PyObject *
  GetComError(HRESULT errcode, GUID *riid, IUnknown *pIunk)
  {
@@ -143,7 +156,7 @@ index 3a12eb603e..60d06f1778 100644
      HRESULT hr;
      ISupportErrorInfo *psei = NULL;
      IErrorInfo *pei = NULL;
-@@ -1071,7 +1076,7 @@ GetComError(HRESULT errcode, GUID *riid, IUnknown *pIunk)
+@@ -1071,7 +1082,7 @@ GetComError(HRESULT errcode, GUID *riid, IUnknown *pIunk)
          SysFreeString(helpfile);
      if (source)
          SysFreeString(source);
@@ -152,7 +165,7 @@ index 3a12eb603e..60d06f1778 100644
      return NULL;
  }
  #endif
-@@ -1262,7 +1267,9 @@ static PyObject *format_error(PyObject *self, PyObject *args)
+@@ -1262,7 +1273,9 @@ static PyObject *format_error(PyObject *self, PyObject *args)
      lpMsgBuf = FormatError(code);
      if (lpMsgBuf) {
          result = Py_BuildValue(PYBUILD_TSTR, lpMsgBuf);
@@ -162,7 +175,7 @@ index 3a12eb603e..60d06f1778 100644
      } else {
          result = Py_BuildValue("s", "<no description>");
      }
-@@ -1304,7 +1311,11 @@ static PyObject *load_library(PyObject *self, PyObject *args)
+@@ -1304,7 +1317,11 @@ static PyObject *load_library(PyObject *self, PyObject *args)
          return NULL;
  #endif
  
@@ -174,8 +187,16 @@ index 3a12eb603e..60d06f1778 100644
      if (!hMod)
          return PyErr_SetFromWindowsErr(GetLastError());
  #ifdef _WIN64
+@@ -1936,6 +1953,7 @@ PyMethodDef _ctypes_module_methods[] = {
+     {"FreeLibrary", free_library, METH_VARARGS, free_library_doc},
+     {"call_commethod", call_commethod, METH_VARARGS },
+     {"_check_HRESULT", check_hresult, METH_VARARGS},
++    {"GetLastError", _kernel32_get_last_error, METH_NOARGS },
+ #else
+     {"dlopen", py_dl_open, METH_VARARGS,
+      "dlopen(name, flag={RTLD_GLOBAL|RTLD_LOCAL}) open a shared library"},
 diff --git a/Modules/_ctypes/cfield.c b/Modules/_ctypes/cfield.c
-index e033cd5fff..d0d024fb5d 100644
+index e033cd5..d0d024f 100644
 --- a/Modules/_ctypes/cfield.c
 +++ b/Modules/_ctypes/cfield.c
 @@ -1372,7 +1372,7 @@ z_get(void *ptr, Py_ssize_t size)
@@ -198,7 +219,7 @@ index e033cd5fff..d0d024fb5d 100644
                           "invalid string pointer %p",
 diff --git a/Modules/_ctypes/libffi_msvc/arm.asm b/Modules/_ctypes/libffi_msvc/arm.asm
 new file mode 100644
-index 0000000000..dc6e168d73
+index 0000000..dc6e168
 --- /dev/null
 +++ b/Modules/_ctypes/libffi_msvc/arm.asm
 @@ -0,0 +1,331 @@
@@ -535,7 +556,7 @@ index 0000000000..dc6e168d73
 +    END
 \ No newline at end of file
 diff --git a/Modules/_ctypes/libffi_msvc/ffi.c b/Modules/_ctypes/libffi_msvc/ffi.c
-index 515d802fd8..a48a0ded68 100644
+index 515d802..a48a0de 100644
 --- a/Modules/_ctypes/libffi_msvc/ffi.c
 +++ b/Modules/_ctypes/libffi_msvc/ffi.c
 @@ -35,7 +35,7 @@
@@ -893,7 +914,7 @@ index 515d802fd8..a48a0ded68 100644
    /* now, do a generic return based on the value of rtype */
    if (rtype == FFI_TYPE_INT)
 diff --git a/Modules/_hotshot.c b/Modules/_hotshot.c
-index 33cd38da2f..8c26013206 100644
+index 33cd38d..8c26013 100644
 --- a/Modules/_hotshot.c
 +++ b/Modules/_hotshot.c
 @@ -1462,9 +1462,13 @@ write_header(ProfilerObject *self)
@@ -912,7 +933,7 @@ index 33cd38da2f..8c26013206 100644
      if (temp == NULL || !PyList_Check(temp)) {
          PyErr_SetString(PyExc_RuntimeError, "sys.path must be a list");
 diff --git a/Modules/_io/bufferedio.c b/Modules/_io/bufferedio.c
-index 5bef7463e7..85476bf2ee 100644
+index 5bef746..85476bf 100644
 --- a/Modules/_io/bufferedio.c
 +++ b/Modules/_io/bufferedio.c
 @@ -454,7 +454,7 @@ buffered_closed_get(buffered *self, void *context)
@@ -934,7 +955,7 @@ index 5bef7463e7..85476bf2ee 100644
      if (ret == NULL)
          PyErr_Fetch(&exc, &val, &tb);
 diff --git a/Modules/_io/textio.c b/Modules/_io/textio.c
-index b4007c27e7..275195cbda 100644
+index b4007c2..275195c 100644
 --- a/Modules/_io/textio.c
 +++ b/Modules/_io/textio.c
 @@ -2472,7 +2472,7 @@ textiowrapper_close(textio *self, PyObject *args)
@@ -947,7 +968,7 @@ index b4007c27e7..275195cbda 100644
          if (res == NULL)
              PyErr_Fetch(&exc, &val, &tb);
 diff --git a/Modules/_localemodule.c b/Modules/_localemodule.c
-index 7e2f1a997b..9aff6fca40 100644
+index 7e2f1a9..9aff6fc 100644
 --- a/Modules/_localemodule.c
 +++ b/Modules/_localemodule.c
 @@ -380,7 +380,7 @@ PyLocale_strxfrm(PyObject* self, PyObject* args)
@@ -991,7 +1012,7 @@ index 7e2f1a997b..9aff6fca40 100644
  #define LANGINFO(X) {#X, X}
  static struct langinfo_constant{
 diff --git a/Modules/_multiprocessing/multiprocessing.c b/Modules/_multiprocessing/multiprocessing.c
-index d192a074ba..4727ee76cc 100644
+index d192a07..4727ee7 100644
 --- a/Modules/_multiprocessing/multiprocessing.c
 +++ b/Modules/_multiprocessing/multiprocessing.c
 @@ -295,7 +295,7 @@ init_multiprocessing(void)
@@ -1017,7 +1038,7 @@ index d192a074ba..4727ee76cc 100644
  
      /* Add configuration macros */
 diff --git a/Modules/_multiprocessing/multiprocessing.h b/Modules/_multiprocessing/multiprocessing.h
-index 14425de821..595a9b81fe 100644
+index 14425de..595a9b8 100644
 --- a/Modules/_multiprocessing/multiprocessing.h
 +++ b/Modules/_multiprocessing/multiprocessing.h
 @@ -18,6 +18,9 @@
@@ -1041,7 +1062,7 @@ index 14425de821..595a9b81fe 100644
  
  /*
 diff --git a/Modules/_multiprocessing/pipe_connection.c b/Modules/_multiprocessing/pipe_connection.c
-index 05dde0cf39..44eafc862a 100644
+index 05dde0c..44eafc8 100644
 --- a/Modules/_multiprocessing/pipe_connection.c
 +++ b/Modules/_multiprocessing/pipe_connection.c
 @@ -37,7 +37,7 @@ conn_send_string(ConnectionObject *conn, char *string, size_t length)
@@ -1062,7 +1083,7 @@ index 05dde0cf39..44eafc862a 100644
  /*
   * Check whether any data is available for reading
 diff --git a/Modules/_multiprocessing/semaphore.c b/Modules/_multiprocessing/semaphore.c
-index fc42754347..1b245e9df5 100644
+index fc42754..1b245e9 100644
 --- a/Modules/_multiprocessing/semaphore.c
 +++ b/Modules/_multiprocessing/semaphore.c
 @@ -24,6 +24,15 @@ typedef struct {
@@ -1082,7 +1103,7 @@ index fc42754347..1b245e9df5 100644
   * Windows definitions
   */
 diff --git a/Modules/_multiprocessing/win32_functions.c b/Modules/_multiprocessing/win32_functions.c
-index 9425929469..8d82bf67c3 100644
+index 9425929..8d82bf6 100644
 --- a/Modules/_multiprocessing/win32_functions.c
 +++ b/Modules/_multiprocessing/win32_functions.c
 @@ -35,6 +35,7 @@ win32_CloseHandle(PyObject *self, PyObject *args)
@@ -1185,7 +1206,7 @@ index 9425929469..8d82bf67c3 100644
  };
  
 diff --git a/Modules/audioop.c b/Modules/audioop.c
-index a4d13753b6..526f208b3a 100644
+index a4d1375..526f208 100644
 --- a/Modules/audioop.c
 +++ b/Modules/audioop.c
 @@ -25,7 +25,7 @@ typedef short PyInt16;
@@ -1209,7 +1230,7 @@ index a4d13753b6..526f208b3a 100644
      if (!PyArg_ParseTuple(args, "s#i:minmax", &cp, &len, &size))
          return NULL;
 diff --git a/Modules/cPickle.c b/Modules/cPickle.c
-index 845ad8f6a5..a080cbc045 100644
+index 845ad8f..a080cbc 100644
 --- a/Modules/cPickle.c
 +++ b/Modules/cPickle.c
 @@ -614,7 +614,7 @@ static Py_ssize_t
@@ -1222,7 +1243,7 @@ index 845ad8f6a5..a080cbc045 100644
      while (1) {
          int k;
 diff --git a/Modules/main.c b/Modules/main.c
-index 44217c67ca..992ad2dbd4 100644
+index 44217c6..992ad2d 100644
 --- a/Modules/main.c
 +++ b/Modules/main.c
 @@ -15,6 +15,16 @@
@@ -1243,7 +1264,7 @@ index 44217c67ca..992ad2dbd4 100644
  #define PYTHONHOMEHELP "<prefix>\\lib"
  #else
 diff --git a/Modules/mmapmodule.c b/Modules/mmapmodule.c
-index 0dc480599f..e306122a52 100644
+index 0dc4805..e306122 100644
 --- a/Modules/mmapmodule.c
 +++ b/Modules/mmapmodule.c
 @@ -395,6 +395,19 @@ mmap_size_method(mmap_object *self,
@@ -1309,7 +1330,7 @@ index 0dc480599f..e306122a52 100644
  }
  #endif /* MS_WINDOWS */
 diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
-index de0b8ec1ed..c03356473f 100644
+index de0b8ec..4e052c5 100644
 --- a/Modules/posixmodule.c
 +++ b/Modules/posixmodule.c
 @@ -31,6 +31,15 @@
@@ -1406,19 +1427,7 @@ index de0b8ec1ed..c03356473f 100644
      return result;
  }
  #endif
-@@ -1018,7 +1051,11 @@ win32_wchdir(LPCWSTR path)
- #if defined(MS_WIN64) || defined(MS_WINDOWS)
- #       define STAT win32_stat
- #       define FSTAT win32_fstat
-+#ifdef MS_UWP
-+#       define STRUCT_STAT struct _Py_stat_struct
-+#else
- #       define STRUCT_STAT struct win32_stat
-+#endif
- #else
- #       define STAT stat
- #       define FSTAT fstat
-@@ -1054,6 +1091,14 @@ struct win32_stat{
+@@ -1054,6 +1087,14 @@ struct win32_stat{
  static __int64 secs_between_epochs = 11644473600; /* Seconds between 1.1.1601 and 1.1.1970 */
  
  static void
@@ -1433,223 +1442,14 @@ index de0b8ec1ed..c03356473f 100644
  FILE_TIME_to_time_t_nsec(FILETIME *in_ptr, time_t *time_out, int* nsec_out)
  {
      /* XXX endianness. Shouldn't matter, as all Windows implementations are little-endian */
-@@ -1107,6 +1152,279 @@ attribute_data_to_stat(WIN32_FILE_ATTRIBUTE_DATA *info, struct win32_stat *resul
-     return 0;
+@@ -1217,6 +1258,69 @@ win32_wstat(const wchar_t* path, struct win32_stat *result)
+     return code;
  }
  
 +#ifdef MS_UWP
 +
-+static BOOL
-+attributes_from_dir_w(LPCWSTR pszFile, FILE_BASIC_INFO *fbi, FILE_STANDARD_INFO *fsi, ULONG *reparse_tag)
-+{
-+    HANDLE hFindFile;
-+    WIN32_FIND_DATAW FileData;
-+    hFindFile = FindFirstFileExW(pszFile, FindExInfoBasic, &FileData, FindExSearchNameMatch, NULL, 0);
-+    if (hFindFile == INVALID_HANDLE_VALUE)
-+        return FALSE;
-+    FindClose(hFindFile);
-+    memset(fbi, 0, sizeof(*fbi));
-+    memset(fsi, 0, sizeof(*fsi));
-+    *reparse_tag = 0;
-+    fbi->FileAttributes = FileData.dwFileAttributes;
-+    fbi->CreationTime.QuadPart = *(LONGLONG*)&FileData.ftCreationTime;
-+    fbi->LastAccessTime.QuadPart = *(LONGLONG*)&FileData.ftLastAccessTime;
-+    fbi->LastWriteTime.QuadPart = *(LONGLONG*)&FileData.ftLastWriteTime;
-+    fsi->EndOfFile.HighPart = FileData.nFileSizeHigh;
-+    fsi->EndOfFile.LowPart = FileData.nFileSizeLow;
-+    fsi->NumberOfLinks = 1;
-+    if (FileData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-+        *reparse_tag = FileData.dwReserved0;
-+    return TRUE;
-+}
-+
-+static BOOL
-+get_target_path(HANDLE hdl, wchar_t **target_path)
-+{
-+    wchar_t *buf;
-+    FILE_NAME_INFO fni;
-+    if (!GetFileInformationByHandleEx(hdl, FileNameInfo, &fni, sizeof(fni)))
-+        return FALSE;
-+
-+    buf = (wchar_t *)malloc((fni.FileNameLength + 1) * sizeof(wchar_t));
-+    if (!buf) {
-+        SetLastError(ERROR_OUTOFMEMORY);
-+        return FALSE;
-+    }
-+    wcscpy(buf, fni.FileName);
-+    *target_path = buf;
-+    return TRUE;
-+}
-+
-+
 +static int
-+win32_stat(const char *path, struct _Py_stat_struct *result)
-+{
-+    /* byte-oriented API not supported in app */
-+    SetLastError(E_NOTIMPL);
-+    return -1;
-+}
-+
-+struct _Py_stat_struct {
-+    unsigned long st_dev;
-+    __int64 st_ino;
-+    unsigned short st_mode;
-+    int st_nlink;
-+    int st_uid;
-+    int st_gid;
-+    unsigned long st_rdev;
-+    __int64 st_size;
-+    time_t st_atime;
-+    int st_atime_nsec;
-+    time_t st_mtime;
-+    int st_mtime_nsec;
-+    time_t st_ctime;
-+    int st_ctime_nsec;
-+    unsigned long st_file_attributes;
-+};
-+
-+void
-+_Py_attribute_data_to_stat(FILE_BASIC_INFO *basicInfo, FILE_STANDARD_INFO *standardInfo, FILE_ID_INFO* fileIdInfo, int reparse_tag, struct _Py_stat_struct *result)
-+{
-+    memset(result, 0, sizeof(*result));
-+    result->st_mode = attributes_to_mode(basicInfo->FileAttributes);
-+    result->st_size = standardInfo->EndOfFile.QuadPart;
-+    longlong_to_time_t_nsec(basicInfo->CreationTime.QuadPart, &result->st_ctime, &result->st_ctime_nsec);
-+    longlong_to_time_t_nsec(basicInfo->LastWriteTime.QuadPart, &result->st_mtime, &result->st_mtime_nsec);
-+    longlong_to_time_t_nsec(basicInfo->LastAccessTime.QuadPart, &result->st_atime, &result->st_atime_nsec);
-+    result->st_nlink = standardInfo->NumberOfLinks;
-+    result->st_ino = 0;
-+    if (reparse_tag == IO_REPARSE_TAG_SYMLINK) {
-+        /* first clear the S_IFMT bits */
-+        result->st_mode ^= (result->st_mode & S_IFMT);
-+        /* now set the bits that make this a symlink */
-+        result->st_mode |= S_IFLNK;
-+    }
-+    result->st_file_attributes = basicInfo->FileAttributes;
-+    result->st_ino = *(long long*)&fileIdInfo->FileId;
-+    result->st_dev = fileIdInfo->VolumeSerialNumber;
-+}
-+
-+static int
-+win32_wstat(const wchar_t* path, struct _Py_stat_struct *result);
-+
-+static int
-+win32_xstat_impl_w(const wchar_t *path, struct _Py_stat_struct *result,
-+    BOOL traverse) 
-+{
-+    int code;
-+    HANDLE hFile, hFile2;
-+    FILE_BASIC_INFO fbi;
-+    FILE_STANDARD_INFO fsi;
-+    FILE_ID_INFO fii;
-+    CREATEFILE2_EXTENDED_PARAMETERS cep;
-+    ULONG reparse_tag = 0;
-+    wchar_t *target_path;
-+    const wchar_t *dot;
-+
-+    cep.dwSize = sizeof(cep);
-+    cep.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-+    /* FILE_FLAG_BACKUP_SEMANTICS is required to open a directory */
-+    /* FILE_FLAG_OPEN_REPARSE_POINT does not follow the symlink.
-+    Because of this, calls like GetFinalPathNameByHandle will return
-+    the symlink path agin and not the actual final path. */
-+    cep.dwFileFlags = FILE_FLAG_BACKUP_SEMANTICS |
-+        FILE_FLAG_OPEN_REPARSE_POINT;
-+    cep.dwSecurityQosFlags = 0;
-+    cep.lpSecurityAttributes = NULL;
-+    cep.hTemplateFile = NULL;
-+    hFile = CreateFile2(
-+        path,
-+        FILE_READ_ATTRIBUTES, /* desired access */
-+        FILE_SHARE_READ, /* share mode */
-+        OPEN_EXISTING,
-+        &cep);
-+
-+    if (hFile == INVALID_HANDLE_VALUE) {
-+        /* Either the target doesn't exist, or we don't have access to
-+        get a handle to it. If the former, we need to return an error.
-+        If the latter, we can use attributes_from_dir. */
-+        if (GetLastError() != ERROR_SHARING_VIOLATION)
-+            return -1;
-+        /* Could not get attributes on open file. Fall back to
-+        reading the directory. */
-+        if (!attributes_from_dir_w(path, &fbi, &fsi, &reparse_tag))
-+            /* Very strange. This should not fail now */
-+            return -1;
-+        if (fbi.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-+            if (traverse) {
-+                /* Should traverse, but could not open reparse point handle */
-+                SetLastError(ERROR_SHARING_VIOLATION);
-+                return -1;
-+            }
-+        }
-+    }
-+    else {
-+
-+        if (!GetFileInformationByHandleEx(hFile, FileBasicInfo, &fbi, sizeof(fbi))) {
-+            CloseHandle(hFile);
-+            return -1;
-+        }
-+        if (!GetFileInformationByHandleEx(hFile, FileStandardInfo, &fsi, sizeof(fsi))) {
-+            CloseHandle(hFile);
-+            return -1;
-+        }
-+        if (!GetFileInformationByHandleEx(hFile, FileIdInfo, &fii, sizeof(fii))) {
-+            CloseHandle(hFile);
-+            return -1;
-+        }
-+
-+        if (fbi.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-+            /* Close the outer open file handle now that we're about to
-+            reopen it with different flags. */
-+            if (!CloseHandle(hFile))
-+                return -1;
-+
-+            if (traverse) {
-+                /* In order to call GetFinalPathNameByHandle we need to open
-+                the file without the reparse handling flag set. */
-+                cep.dwFileFlags = FILE_FLAG_OPEN_REPARSE_POINT;
-+                hFile2 = CreateFile2(
-+                    path,
-+                    FILE_READ_ATTRIBUTES, /* desired access */
-+                    FILE_SHARE_READ, /* share mode */
-+                    OPEN_EXISTING,
-+                    &cep);
-+                if (hFile2 == INVALID_HANDLE_VALUE)
-+                    return -1;
-+
-+                if (!get_target_path(hFile2, &target_path))
-+                    return -1;
-+                CloseHandle(hFile2);
-+
-+                code = win32_xstat_impl_w(target_path, result, FALSE);
-+                free(target_path);
-+                return code;
-+            }
-+        }
-+        else
-+            CloseHandle(hFile);
-+    }
-+    _Py_attribute_data_to_stat(&fbi, &fsi, &fii, reparse_tag, result);
-+
-+    /* Set S_IEXEC if it is an .exe, .bat, ... */
-+    dot = wcsrchr(path, '.');
-+    if (dot) {
-+        if (_wcsicmp(dot, L".bat") == 0 || _wcsicmp(dot, L".cmd") == 0 ||
-+            _wcsicmp(dot, L".exe") == 0 || _wcsicmp(dot, L".com") == 0)
-+            result->st_mode |= 0111;
-+    }
-+    return 0;
-+}
-+
-+static int
-+win32_wstat(const wchar_t* path, struct _Py_stat_struct *result)
-+{
-+    return win32_xstat_impl_w(path, result, TRUE);
-+};
-+
-+static int
-+win32_fstat(int file_number, struct _Py_stat_struct *result)
++win32_fstat(int file_number, struct win32_stat *result)
 +{
 +    FILE_ID_BOTH_DIR_INFO info;
 +    FILE_STANDARD_INFO sInfo;
@@ -1708,21 +1508,20 @@ index de0b8ec1ed..c03356473f 100644
 +    result->st_ino = info.FileIndex;
 +    return 0;
 +}
-+
 +#else
- static BOOL
- attributes_from_dir(LPCSTR pszFile, LPWIN32_FILE_ATTRIBUTE_DATA pfad)
+ static int
+ win32_fstat(int file_number, struct win32_stat *result)
  {
-@@ -1270,7 +1588,7 @@ win32_fstat(int file_number, struct win32_stat *result)
+@@ -1270,7 +1374,7 @@ win32_fstat(int file_number, struct win32_stat *result)
      result->st_ino = (((__int64)info.nFileIndexHigh)<<32) + info.nFileIndexLow;
      return 0;
  }
 -
-+#endif
++#endif /* MS_UWP */
  #endif /* MS_WINDOWS */
  
  PyDoc_STRVAR(stat_result__doc__,
-@@ -1702,7 +2020,7 @@ posix_access(PyObject *self, PyObject *args)
+@@ -1702,7 +1806,7 @@ posix_access(PyObject *self, PyObject *args)
      char *path;
      int mode;
  
@@ -1731,7 +1530,7 @@ index de0b8ec1ed..c03356473f 100644
      DWORD attr;
      Py_UNICODE *wpath;
      if (PyArg_ParseTuple(args, "ui:access", &wpath, &mode)) {
-@@ -1852,7 +2170,7 @@ posix_chmod(PyObject *self, PyObject *args)
+@@ -1852,7 +1956,7 @@ posix_chmod(PyObject *self, PyObject *args)
      char *path = NULL;
      int i;
      int res;
@@ -1740,7 +1539,7 @@ index de0b8ec1ed..c03356473f 100644
      DWORD attr;
      Py_UNICODE *wpath;
      if (PyArg_ParseTuple(args, "ui|:chmod", &wpath, &i)) {
-@@ -2184,7 +2502,7 @@ posix_getcwd(PyObject *self, PyObject *noargs)
+@@ -2184,7 +2288,7 @@ posix_getcwd(PyObject *self, PyObject *noargs)
  #if defined(PYOS_OS2) && defined(PYCC_GCC)
          res = _getcwd2(tmpbuf, bufsize);
  #else
@@ -1749,7 +1548,7 @@ index de0b8ec1ed..c03356473f 100644
  #endif
  
          if (res == NULL) {
-@@ -2247,7 +2565,7 @@ posix_getcwdu(PyObject *self, PyObject *noargs)
+@@ -2247,7 +2351,7 @@ posix_getcwdu(PyObject *self, PyObject *noargs)
  #if defined(PYOS_OS2) && defined(PYCC_GCC)
      res = _getcwd2(buf, sizeof buf);
  #else
@@ -1758,7 +1557,7 @@ index de0b8ec1ed..c03356473f 100644
  #endif
      Py_END_ALLOW_THREADS
      if (res == NULL)
-@@ -2270,9 +2588,8 @@ posix_link(PyObject *self, PyObject *args)
+@@ -2270,9 +2374,8 @@ posix_link(PyObject *self, PyObject *args)
  }
  #endif /* HAVE_LINK */
  
@@ -1769,16 +1568,15 @@ index de0b8ec1ed..c03356473f 100644
  Return a list containing the names of the entries in the directory.\n\
  \n\
      path: path of directory to list\n\
-@@ -2280,20 +2597,136 @@ Return a list containing the names of the entries in the directory.\n\
+@@ -2280,20 +2383,136 @@ Return a list containing the names of the entries in the directory.\n\
  The list is in arbitrary order.  It does not include the special\n\
  entries '.' and '..' even if they are present in the directory.");
  
 +#ifdef MS_UWP
- static PyObject *
- posix_listdir(PyObject *self, PyObject *args)
- {
-     /* XXX Should redo this putting the (now four) versions of opendir
--       in separate files instead of having them all here... */
++static PyObject *
++posix_listdir(PyObject *self, PyObject *args)
++{
++    /* XXX Should redo this putting the (now four) versions of opendir
 +    in separate files instead of having them all here... */
 +
 +    PyObject *d = NULL, *v = NULL;
@@ -1890,10 +1688,11 @@ index de0b8ec1ed..c03356473f 100644
 +
 +
 +#else
-+static PyObject *
-+posix_listdir(PyObject *self, PyObject *args)
-+{
-+    /* XXX Should redo this putting the (now four) versions of opendir
+ static PyObject *
+ posix_listdir(PyObject *self, PyObject *args)
+ {
+     /* XXX Should redo this putting the (now four) versions of opendir
+-       in separate files instead of having them all here... */
 +    in separate files instead of having them all here... */
  #if defined(MS_WINDOWS) && !defined(HAVE_OPENDIR)
  
@@ -1909,7 +1708,7 @@ index de0b8ec1ed..c03356473f 100644
  
      Py_UNICODE *wpath;
      if (PyArg_ParseTuple(args, "u:listdir", &wpath)) {
-@@ -2308,7 +2741,7 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2308,7 +2527,7 @@ posix_listdir(PyObject *self, PyObject *args)
          }
          wcscpy(wnamebuf, wpath);
          if (len > 0) {
@@ -1918,7 +1717,7 @@ index de0b8ec1ed..c03356473f 100644
              if (wch != L'/' && wch != L'\\' && wch != L':')
                  wnamebuf[len++] = L'\\';
              wcscpy(wnamebuf + len, L"*.*");
-@@ -2318,19 +2751,19 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2318,19 +2537,19 @@ posix_listdir(PyObject *self, PyObject *args)
              return NULL;
          }
          Py_BEGIN_ALLOW_THREADS
@@ -1948,7 +1747,7 @@ index de0b8ec1ed..c03356473f 100644
          do {
              /* Skip over . and .. */
              if (wcscmp(wFileData.cFileName, L".") != 0 &&
-@@ -2350,17 +2783,17 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2350,17 +2569,17 @@ posix_listdir(PyObject *self, PyObject *args)
                  Py_DECREF(v);
              }
              Py_BEGIN_ALLOW_THREADS
@@ -1976,7 +1775,7 @@ index de0b8ec1ed..c03356473f 100644
          } while (result == TRUE);
  
          if (FindClose(hFindFile) == FALSE) {
-@@ -2373,14 +2806,14 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2373,14 +2592,14 @@ posix_listdir(PyObject *self, PyObject *args)
          return d;
      }
      /* Drop the argument parsing error as narrow strings
@@ -1994,7 +1793,7 @@ index de0b8ec1ed..c03356473f 100644
          if (ch != SEP && ch != ALTSEP && ch != ':')
              namebuf[len++] = '/';
          strcpy(namebuf + len, "*.*");
-@@ -2390,15 +2823,15 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2390,15 +2609,15 @@ posix_listdir(PyObject *self, PyObject *args)
          return NULL;
  
      Py_BEGIN_ALLOW_THREADS
@@ -2018,7 +1817,7 @@ index de0b8ec1ed..c03356473f 100644
      do {
          /* Skip over . and .. */
          if (strcmp(FileData.cFileName, ".") != 0 &&
-@@ -2418,16 +2851,16 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2418,16 +2637,16 @@ posix_listdir(PyObject *self, PyObject *args)
              Py_DECREF(v);
          }
          Py_BEGIN_ALLOW_THREADS
@@ -2044,7 +1843,7 @@ index de0b8ec1ed..c03356473f 100644
      } while (result == TRUE);
  
      if (FindClose(hFindFile) == FALSE) {
-@@ -2445,7 +2878,7 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2445,7 +2664,7 @@ posix_listdir(PyObject *self, PyObject *args)
      char *name, *pt;
      Py_ssize_t len;
      PyObject *d, *v;
@@ -2053,7 +1852,7 @@ index de0b8ec1ed..c03356473f 100644
      HDIR  hdir = 1;
      ULONG srchcnt = 1;
      FILEFINDBUF3   ep;
-@@ -2461,7 +2894,7 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2461,7 +2680,7 @@ posix_listdir(PyObject *self, PyObject *args)
      for (pt = namebuf; *pt; pt++)
          if (*pt == ALTSEP)
              *pt = SEP;
@@ -2062,7 +1861,7 @@ index de0b8ec1ed..c03356473f 100644
          namebuf[len++] = SEP;
      strcpy(namebuf + len, "*.*");
  
-@@ -2469,11 +2902,11 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2469,11 +2688,11 @@ posix_listdir(PyObject *self, PyObject *args)
          return NULL;
  
      rc = DosFindFirst(namebuf,         /* Wildcard Pattern to Match */
@@ -2079,7 +1878,7 @@ index de0b8ec1ed..c03356473f 100644
  
      if (rc != NO_ERROR) {
          errno = ENOENT;
-@@ -2483,7 +2916,7 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2483,7 +2702,7 @@ posix_listdir(PyObject *self, PyObject *args)
      if (srchcnt > 0) { /* If Directory is NOT Totally Empty, */
          do {
              if (ep.achName[0] == '.'
@@ -2088,7 +1887,7 @@ index de0b8ec1ed..c03356473f 100644
                  continue; /* Skip Over "." and ".." Names */
  
              strcpy(namebuf, ep.achName);
-@@ -2524,37 +2957,38 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2524,37 +2743,38 @@ posix_listdir(PyObject *self, PyObject *args)
      if (!PyArg_ParseTuple(args, "et:listdir", Py_FileSystemDefaultEncoding, &name))
          return NULL;
      Py_BEGIN_ALLOW_THREADS
@@ -2145,7 +1944,7 @@ index de0b8ec1ed..c03356473f 100644
              continue;
          v = PyString_FromStringAndSize(ep->d_name, NAMLEN(ep));
          if (v == NULL) {
-@@ -2567,15 +3001,15 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2567,15 +2787,15 @@ posix_listdir(PyObject *self, PyObject *args)
              PyObject *w;
  
              w = PyUnicode_FromEncodedObject(v,
@@ -2164,7 +1963,7 @@ index de0b8ec1ed..c03356473f 100644
                  PyErr_Clear();
              }
          }
-@@ -2589,37 +3023,122 @@ posix_listdir(PyObject *self, PyObject *args)
+@@ -2589,37 +2809,122 @@ posix_listdir(PyObject *self, PyObject *args)
          Py_DECREF(v);
      }
      Py_BEGIN_ALLOW_THREADS
@@ -2295,7 +2094,7 @@ index de0b8ec1ed..c03356473f 100644
              woutbufp = malloc(result * sizeof(Py_UNICODE));
              if (!woutbufp)
                  return PyErr_NoMemory();
-@@ -2634,22 +3153,23 @@ posix__getfullpathname(PyObject *self, PyObject *args)
+@@ -2634,22 +2939,23 @@ posix__getfullpathname(PyObject *self, PyObject *args)
          return v;
      }
      /* Drop the argument parsing error as narrow strings
@@ -2326,7 +2125,7 @@ index de0b8ec1ed..c03356473f 100644
  #endif /* MS_WINDOWS */
  
  PyDoc_STRVAR(posix_mkdir__doc__,
-@@ -2763,8 +3283,10 @@ posix_rename(PyObject *self, PyObject *args)
+@@ -2763,8 +3069,10 @@ posix_rename(PyObject *self, PyObject *args)
  {
  #ifdef MS_WINDOWS
      PyObject *o1, *o2;
@@ -2338,7 +2137,7 @@ index de0b8ec1ed..c03356473f 100644
      if (!PyArg_ParseTuple(args, "OO:rename", &o1, &o2))
          goto error;
      if (!convert_to_unicode(&o1))
-@@ -2774,8 +3296,12 @@ posix_rename(PyObject *self, PyObject *args)
+@@ -2774,8 +3082,12 @@ posix_rename(PyObject *self, PyObject *args)
          goto error;
      }
      Py_BEGIN_ALLOW_THREADS
@@ -2351,7 +2150,7 @@ index de0b8ec1ed..c03356473f 100644
      Py_END_ALLOW_THREADS
      Py_DECREF(o1);
      Py_DECREF(o2);
-@@ -2784,12 +3310,14 @@ posix_rename(PyObject *self, PyObject *args)
+@@ -2784,12 +3096,14 @@ posix_rename(PyObject *self, PyObject *args)
      Py_INCREF(Py_None);
      return Py_None;
  error:
@@ -2366,7 +2165,7 @@ index de0b8ec1ed..c03356473f 100644
      if (!result)
          return win32_error("rename", NULL);
      Py_INCREF(Py_None);
-@@ -2961,7 +3489,7 @@ posix_utime(PyObject *self, PyObject *args)
+@@ -2961,7 +3275,7 @@ posix_utime(PyObject *self, PyObject *args)
      PyObject *arg;
      wchar_t *wpath = NULL;
      char *apath = NULL;
@@ -2375,7 +2174,7 @@ index de0b8ec1ed..c03356473f 100644
      time_t atimesec, mtimesec;
      long ausec, musec;
      FILETIME atime, mtime;
-@@ -2969,9 +3497,13 @@ posix_utime(PyObject *self, PyObject *args)
+@@ -2969,9 +3283,13 @@ posix_utime(PyObject *self, PyObject *args)
  
      if (PyArg_ParseTuple(args, "uO|:utime", &wpath, &arg)) {
          Py_BEGIN_ALLOW_THREADS
@@ -2389,7 +2188,7 @@ index de0b8ec1ed..c03356473f 100644
          Py_END_ALLOW_THREADS
          if (hFile == INVALID_HANDLE_VALUE)
              return win32_error_unicode("utime", wpath);
-@@ -2980,6 +3512,7 @@ posix_utime(PyObject *self, PyObject *args)
+@@ -2980,6 +3298,7 @@ posix_utime(PyObject *self, PyObject *args)
             are also valid. */
          PyErr_Clear();
  
@@ -2397,7 +2196,7 @@ index de0b8ec1ed..c03356473f 100644
      if (!wpath) {
          if (!PyArg_ParseTuple(args, "etO:utime",
                                Py_FileSystemDefaultEncoding, &apath, &arg))
-@@ -2996,6 +3529,7 @@ posix_utime(PyObject *self, PyObject *args)
+@@ -2996,6 +3315,7 @@ posix_utime(PyObject *self, PyObject *args)
          }
          PyMem_Free(apath);
      }
@@ -2405,7 +2204,7 @@ index de0b8ec1ed..c03356473f 100644
  
      if (arg == Py_None) {
          SYSTEMTIME now;
-@@ -4376,7 +4910,8 @@ posix_killpg(PyObject *self, PyObject *args)
+@@ -4376,7 +4696,8 @@ posix_killpg(PyObject *self, PyObject *args)
  }
  #endif
  
@@ -2415,7 +2214,7 @@ index de0b8ec1ed..c03356473f 100644
  PyDoc_STRVAR(win32_kill__doc__,
  "kill(pid, sig)\n\n\
  Kill a process with a signal.");
-@@ -4422,12 +4957,60 @@ win32_kill(PyObject *self, PyObject *args)
+@@ -4422,12 +4743,60 @@ win32_kill(PyObject *self, PyObject *args)
      return result;
  }
  
@@ -2476,7 +2275,7 @@ index de0b8ec1ed..c03356473f 100644
      char *path;
      Py_UNICODE *wpath;
      DWORD attributes;
-@@ -4439,11 +5022,11 @@ posix__isdir(PyObject *self, PyObject *args)
+@@ -4439,11 +4808,11 @@ posix__isdir(PyObject *self, PyObject *args)
          goto check;
      }
      /* Drop the argument parsing error as narrow strings
@@ -2490,7 +2289,7 @@ index de0b8ec1ed..c03356473f 100644
          return NULL;
  
      attributes = GetFileAttributesA(path);
-@@ -4457,6 +5040,7 @@ check:
+@@ -4457,6 +4826,7 @@ check:
      else
          Py_RETURN_FALSE;
  }
@@ -2498,7 +2297,7 @@ index de0b8ec1ed..c03356473f 100644
  #endif /* MS_WINDOWS */
  
  #ifdef HAVE_PLOCK
-@@ -6448,6 +7032,16 @@ posix_times(PyObject *self, PyObject *noargs)
+@@ -6448,6 +6818,16 @@ posix_times(PyObject *self, PyObject *noargs)
  static PyObject *
  posix_times(PyObject *self, PyObject *noargs)
  {
@@ -2515,7 +2314,7 @@ index de0b8ec1ed..c03356473f 100644
      FILETIME create, exit, kernel, user;
      HANDLE hProc;
      hProc = GetCurrentProcess();
-@@ -6466,6 +7060,7 @@ posix_times(PyObject *self, PyObject *noargs)
+@@ -6466,6 +6846,7 @@ posix_times(PyObject *self, PyObject *noargs)
          (double)0,
          (double)0,
          (double)0);
@@ -2523,7 +2322,7 @@ index de0b8ec1ed..c03356473f 100644
  }
  #endif /* MS_WINDOWS */
  
-@@ -8643,6 +9238,10 @@ The filepath is relative to the current directory.  If you want to use\n\
+@@ -8643,6 +9024,10 @@ The filepath is relative to the current directory.  If you want to use\n\
  an absolute path, make sure the first character is not a slash (\"/\");\n\
  the underlying Win32 ShellExecute function doesn't work if it is.");
  
@@ -2534,7 +2333,7 @@ index de0b8ec1ed..c03356473f 100644
  static PyObject *
  win32_startfile(PyObject *self, PyObject *args)
  {
-@@ -8669,9 +9268,13 @@ win32_startfile(PyObject *self, PyObject *args)
+@@ -8669,9 +9054,13 @@ win32_startfile(PyObject *self, PyObject *args)
      }
  
      Py_BEGIN_ALLOW_THREADS
@@ -2548,7 +2347,7 @@ index de0b8ec1ed..c03356473f 100644
      Py_END_ALLOW_THREADS
  
      Py_XDECREF(woperation);
-@@ -8688,8 +9291,12 @@ normal:
+@@ -8688,8 +9077,12 @@ normal:
                            &operation))
          return NULL;
      Py_BEGIN_ALLOW_THREADS
@@ -2563,7 +2362,7 @@ index de0b8ec1ed..c03356473f 100644
      if (rc <= (HINSTANCE)32) {
          PyObject *errval = win32_error("startfile", filepath);
 diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
-index 1d7ba4ba48..30b4a9cddb 100644
+index 1d7ba4b..30b4a9c 100644
 --- a/Modules/signalmodule.c
 +++ b/Modules/signalmodule.c
 @@ -23,6 +23,17 @@
@@ -2585,7 +2384,7 @@ index 1d7ba4ba48..30b4a9cddb 100644
  #define SIG_ERR ((PyOS_sighandler_t)(-1))
  #endif
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 3e3c05f540..b5038c21fc 100644
+index 3e3c05f..b5038c2 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -99,9 +99,11 @@ Local naming conventions:
@@ -2622,7 +2421,7 @@ index 3e3c05f540..b5038c21fc 100644
      Py_ssize_t len;
      sock_addr_t addrbuf;
 diff --git a/Modules/timemodule.c b/Modules/timemodule.c
-index 20d7c4b5c1..088bf1eab2 100644
+index 20d7c4b..088bf1e 100644
 --- a/Modules/timemodule.c
 +++ b/Modules/timemodule.c
 @@ -27,6 +27,17 @@
@@ -2679,7 +2478,7 @@ index 20d7c4b5c1..088bf1eab2 100644
      if (!initialized) {
          PyStructSequence_InitType(&StructTimeType,
 diff --git a/Objects/codeobject.c b/Objects/codeobject.c
-index a66aa6905a..0c68ae0de2 100644
+index a66aa69..0c68ae0 100644
 --- a/Objects/codeobject.c
 +++ b/Objects/codeobject.c
 @@ -498,7 +498,7 @@ _PyCode_ConstantKey(PyObject *op)
@@ -2692,7 +2491,7 @@ index a66aa6905a..0c68ae0de2 100644
          Py_ssize_t i, len;
          PyObject *tuple, *set;
 diff --git a/Objects/dictobject.c b/Objects/dictobject.c
-index e3e4765d0a..a68e2ca2af 100644
+index e3e4765..a68e2ca 100644
 --- a/Objects/dictobject.c
 +++ b/Objects/dictobject.c
 @@ -1409,7 +1409,7 @@ dict_fromkeys(PyObject *cls, PyObject *args)
@@ -2705,7 +2504,7 @@ index e3e4765d0a..a68e2ca2af 100644
  
              if (dictresize(mp, PySet_GET_SIZE(seq) / 2 * 3)) {
 diff --git a/Objects/frameobject.c b/Objects/frameobject.c
-index 2c8fb01749..246ebfde16 100644
+index 2c8fb01..246ebfd 100644
 --- a/Objects/frameobject.c
 +++ b/Objects/frameobject.c
 @@ -147,7 +147,7 @@ frame_setlineno(PyFrameObject *f, PyObject* p_new_lineno)
@@ -2718,7 +2517,7 @@ index 2c8fb01749..246ebfde16 100644
                                   &tmp, &lnotab_len);
          lnotab = (unsigned char *) tmp;
 diff --git a/Objects/object.c b/Objects/object.c
-index 7a28218979..50a52a9c8b 100644
+index 7a28218..50a52a9 100644
 --- a/Objects/object.c
 +++ b/Objects/object.c
 @@ -470,7 +470,7 @@ PyObject_Str(PyObject *v)
@@ -2731,7 +2530,7 @@ index 7a28218979..50a52a9c8b 100644
      PyObject *str;
      int unicode_method_found = 0;
 diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
-index 1bb1866dc6..6496e9cecf 100644
+index 1bb1866..6496e9c 100644
 --- a/Objects/obmalloc.c
 +++ b/Objects/obmalloc.c
 @@ -1,5 +1,11 @@
@@ -2747,7 +2546,7 @@ index 1bb1866dc6..6496e9cecf 100644
   #if __has_feature(address_sanitizer)  /* is ASAN enabled? */
    #define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS \
 diff --git a/Objects/stringobject.c b/Objects/stringobject.c
-index 4e38735e6e..d527538225 100644
+index 4e38735..d527538 100644
 --- a/Objects/stringobject.c
 +++ b/Objects/stringobject.c
 @@ -4015,7 +4015,7 @@ _PyString_FormatLong(PyObject *val, int flags, int prec, int type,
@@ -2769,7 +2568,7 @@ index 4e38735e6e..d527538225 100644
              Py_ssize_t len;
              char formatbuf[FORMATBUFLEN];
 diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
-index ca609a96ae..9469f94071 100644
+index ca609a9..9469f94 100644
 --- a/Objects/unicodeobject.c
 +++ b/Objects/unicodeobject.c
 @@ -3913,11 +3913,12 @@ PyObject *PyUnicode_AsASCIIString(PyObject *unicode)
@@ -2796,7 +2595,7 @@ index ca609a96ae..9469f94071 100644
              Py_ssize_t len;
              Py_UNICODE formatbuf[FORMATBUFLEN]; /* For format{int,char}() */
 diff --git a/PC/_winreg.c b/PC/_winreg.c
-index e139cce85f..4734966685 100644
+index e139cce..4734966 100644
 --- a/PC/_winreg.c
 +++ b/PC/_winreg.c
 @@ -17,6 +17,8 @@
@@ -2816,7 +2615,7 @@ index e139cce85f..4734966685 100644
 +
 +
 diff --git a/PC/bdist_wininst/bdist_wininst.vcxproj b/PC/bdist_wininst/bdist_wininst.vcxproj
-index 2ab474e439..39e4d80bc1 100644
+index 2ab474e..39e4d80 100644
 --- a/PC/bdist_wininst/bdist_wininst.vcxproj
 +++ b/PC/bdist_wininst/bdist_wininst.vcxproj
 @@ -1,5 +1,5 @@
@@ -2858,7 +2657,7 @@ index 2ab474e439..39e4d80bc1 100644
    <ImportGroup Label="ExtensionSettings">
    </ImportGroup>
 diff --git a/PC/bdist_wininst/bdist_wininst.vcxproj.filters b/PC/bdist_wininst/bdist_wininst.vcxproj.filters
-index b4b6a4d514..2f1d034d98 100644
+index b4b6a4d..2f1d034 100644
 --- a/PC/bdist_wininst/bdist_wininst.vcxproj.filters
 +++ b/PC/bdist_wininst/bdist_wininst.vcxproj.filters
 @@ -18,43 +18,43 @@
@@ -2924,7 +2723,7 @@ index b4b6a4d514..2f1d034d98 100644
      </None>
    </ItemGroup>
 diff --git a/PC/config.c b/PC/config.c
-index 35c6608514..95d9d79e06 100644
+index 35c6608..95d9d79 100644
 --- a/PC/config.c
 +++ b/PC/config.c
 @@ -63,7 +63,9 @@ extern void init_codecs_iso2022(void);
@@ -2959,7 +2758,7 @@ index 35c6608514..95d9d79e06 100644
      {"datetime", initdatetime},
      {"_functools", init_functools},
 diff --git a/PC/dl_nt.c b/PC/dl_nt.c
-index 88d3c9bff0..7e6ab1089c 100644
+index 88d3c9b..7e6ab10 100644
 --- a/PC/dl_nt.c
 +++ b/PC/dl_nt.c
 @@ -18,6 +18,8 @@ char dllVersionBuffer[16] = ""; // a private buffer
@@ -3010,7 +2809,7 @@ index 88d3c9bff0..7e6ab1089c 100644
      }
      return TRUE;
 diff --git a/PC/getpathp.c b/PC/getpathp.c
-index 461f9fc545..0de1904276 100644
+index 461f9fc..0de1904 100644
 --- a/PC/getpathp.c
 +++ b/PC/getpathp.c
 @@ -57,6 +57,12 @@
@@ -3048,7 +2847,7 @@ index 461f9fc545..0de1904276 100644
         anything better to use! */
      skipdefault = envpath!=NULL || pythonhome!=NULL || \
 diff --git a/PC/import_nt.c b/PC/import_nt.c
-index 196a774af3..1a0a4ddf81 100644
+index 196a774..1a0a4dd 100644
 --- a/PC/import_nt.c
 +++ b/PC/import_nt.c
 @@ -33,9 +33,11 @@ FILE *PyWin_FindRegisteredModule(const char *moduleName,
@@ -3082,7 +2881,7 @@ index 196a774af3..1a0a4ddf81 100644
      for (fdp = _PyImport_Filetab; fdp->suffix != NULL; fdp++) {
          size_t extLen = strlen(fdp->suffix);
 diff --git a/PC/msvcrtmodule.c b/PC/msvcrtmodule.c
-index 44c82e4594..d1d08e3b57 100644
+index 44c82e4..d1d08e3 100644
 --- a/PC/msvcrtmodule.c
 +++ b/PC/msvcrtmodule.c
 @@ -160,6 +160,8 @@ PyDoc_STRVAR(get_osfhandle_doc,
@@ -3129,7 +2928,7 @@ index 44c82e4594..d1d08e3b57 100644
      PyObject *m = Py_InitModule("msvcrt", msvcrt_functions);
      if (m == NULL)
 diff --git a/PC/pyconfig.h b/PC/pyconfig.h
-index 5200b299f6..c98f074db1 100644
+index 5200b29..9bf46e3 100644
 --- a/PC/pyconfig.h
 +++ b/PC/pyconfig.h
 @@ -79,6 +79,15 @@ WIN32 is still required for the locale module.
@@ -3138,7 +2937,7 @@ index 5200b299f6..c98f074db1 100644
  #define MS_WINDOWS
 +#ifdef WINAPI_FAMILY
 +#   include <winapifamily.h>
-+#   if (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#   if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
 +#     ifndef MS_UWP
 +#       define MS_UWP
 +#       define TARGET_WINDOWS_STORE
@@ -3197,7 +2996,19 @@ index 5200b299f6..c98f074db1 100644
  #endif /* _MSC_VER */
  
  /* define some ANSI types that are not defined in earlier Win headers */
-@@ -551,7 +572,7 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+@@ -361,7 +382,11 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+    should define this. */
+ #	define HAVE_LARGEFILE_SUPPORT
+ #elif defined(MS_WIN32)
++#ifdef MS_UWP
++#	define PLATFORM "win10"
++#else
+ #	define PLATFORM "win32"
++#endif // MS_UWP
+ #	define HAVE_LARGEFILE_SUPPORT
+ #	define SIZEOF_VOID_P 4
+ #	define SIZEOF_OFF_T 4
+@@ -551,7 +576,7 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
  /* #define HAVE_ALTZONE */
  
  /* Define if you have the putenv function.  */
@@ -3208,10 +3019,10 @@ index 5200b299f6..c98f074db1 100644
  
 diff --git a/PC/uwpapi.cpp b/PC/uwpapi.cpp
 new file mode 100644
-index 0000000000..aabff93060
+index 0000000..8e1bbdb
 --- /dev/null
 +++ b/PC/uwpapi.cpp
-@@ -0,0 +1,294 @@
+@@ -0,0 +1,301 @@
 +#include "Python.h"
 +
 +#if defined(MS_UWP) || defined(TARGET_WINDOWS_STORE)
@@ -3368,6 +3179,13 @@ index 0000000000..aabff93060
 +    return success;
 +}
 +
++unsigned long long uwp_getsystemversion()
++{
++  auto sv = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamilyVersion;
++  wchar_t* end;
++  return wcstoull(sv->Data(), &end, 10);
++}
++
 +PyObject * uwp_defaultenviron()
 +{
 +    auto d = PyDict_New();
@@ -3507,7 +3325,7 @@ index 0000000000..aabff93060
 +
 +#endif
 diff --git a/Python/dynload_win.c b/Python/dynload_win.c
-index 4e5555e917..dbc30ac5f3 100644
+index 4e5555e..dbc30ac 100644
 --- a/Python/dynload_win.c
 +++ b/Python/dynload_win.c
 @@ -12,8 +12,10 @@
@@ -3587,7 +3405,7 @@ index 4e5555e917..dbc30ac5f3 100644
              char errBuf[256];
              unsigned int errorCode;
 diff --git a/Python/errors.c b/Python/errors.c
-index d823e1397c..f1fb4ce926 100644
+index d823e13..f1fb4ce 100644
 --- a/Python/errors.c
 +++ b/Python/errors.c
 @@ -347,7 +347,9 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
@@ -3730,7 +3548,7 @@ index d823e1397c..f1fb4ce926 100644
  }
  
 diff --git a/Python/import.c b/Python/import.c
-index 1d74faf5f6..87cdf68cba 100644
+index 1d74faf..87cdf68 100644
 --- a/Python/import.c
 +++ b/Python/import.c
 @@ -27,6 +27,15 @@ extern "C" {
@@ -3855,7 +3673,7 @@ index 1d74faf5f6..87cdf68cba 100644
  #elif defined(DJGPP)
      struct ffblk ffblk;
 diff --git a/Python/pystrtod.c b/Python/pystrtod.c
-index ae6ab9c94f..2ded141ec3 100644
+index ae6ab9c..2ded141 100644
 --- a/Python/pystrtod.c
 +++ b/Python/pystrtod.c
 @@ -528,7 +528,7 @@ Py_LOCAL_INLINE(char *)
@@ -3868,7 +3686,7 @@ index ae6ab9c94f..2ded141ec3 100644
      /* search for the first non-digit character */
      char *p = buffer;
 diff --git a/Python/pythonrun.c b/Python/pythonrun.c
-index 7b85268c63..747286dbc8 100644
+index 7b85268..747286d 100644
 --- a/Python/pythonrun.c
 +++ b/Python/pythonrun.c
 @@ -27,6 +27,17 @@
@@ -3921,7 +3739,7 @@ index 7b85268c63..747286dbc8 100644
      abort();
  }
 diff --git a/Python/random.c b/Python/random.c
-index 2f83b5d087..ed4fa9a39d 100644
+index 2f83b5d..ed4fa9a 100644
 --- a/Python/random.c
 +++ b/Python/random.c
 @@ -14,7 +14,16 @@ int _Py_HashSecret_Initialized = 0;
@@ -3973,7 +3791,7 @@ index 2f83b5d087..ed4fa9a39d 100644
      /* nothing to clean */
  #else
 diff --git a/Python/sysmodule.c b/Python/sysmodule.c
-index aeff38a6e7..f3c0a85088 100644
+index aeff38a..01e10e4 100644
 --- a/Python/sysmodule.c
 +++ b/Python/sysmodule.c
 @@ -83,6 +83,7 @@ PySys_SetObject(char *name, PyObject *v)
@@ -4003,15 +3821,22 @@ index aeff38a6e7..f3c0a85088 100644
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.dwMajorVersion));
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.dwMinorVersion));
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.dwBuildNumber));
-@@ -614,6 +617,17 @@ sys_getwindowsversion(PyObject *self)
+@@ -614,6 +617,24 @@ sys_getwindowsversion(PyObject *self)
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.wServicePackMinor));
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.wSuiteMask));
      PyStructSequence_SET_ITEM(version, pos++, PyInt_FromLong(ver.wProductType));
 +#else
-+    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(6));
-+    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(2));
-+    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(9200));
-+    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(2));
++    extern unsigned long long uwp_getsystemversion();
++    unsigned long long v = uwp_getsystemversion();
++    long v1 = (v & 0xFFFF000000000000L) >> 48;
++    long v2 = (v & 0x0000FFFF00000000L) >> 32;
++    long v3 = (v & 0x00000000FFFF0000L) >> 16;
++    long v4 = (v & 0x000000000000FFFFL);
++
++    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(v1));
++    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(v2));
++    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(v3));
++    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(v4));
 +    PyStructSequence_SET_ITEM(version, pos++, PyUnicode_FromString(""));
 +    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(0));
 +    PyStructSequence_SET_ITEM(version, pos++, PyLong_FromLong(0));
@@ -4021,7 +3846,7 @@ index aeff38a6e7..f3c0a85088 100644
  
      if (PyErr_Occurred()) {
          Py_DECREF(version);
-@@ -1620,7 +1634,7 @@ PySys_SetArgvEx(int argc, char **argv, int updatepath)
+@@ -1620,7 +1641,7 @@ PySys_SetArgvEx(int argc, char **argv, int updatepath)
  {
  #if defined(HAVE_REALPATH)
      char fullpath[MAXPATHLEN];
@@ -4030,7 +3855,7 @@ index aeff38a6e7..f3c0a85088 100644
      char fullpath[MAX_PATH];
  #endif
      PyObject *av = makeargvobject(argc, argv);
-@@ -1665,7 +1679,7 @@ PySys_SetArgvEx(int argc, char **argv, int updatepath)
+@@ -1665,7 +1686,7 @@ PySys_SetArgvEx(int argc, char **argv, int updatepath)
  #if SEP == '\\' /* Special case for MS filename syntax */
          if (argc > 0 && argv0 != NULL && strcmp(argv0, "-c") != 0) {
              char *q;
@@ -4040,7 +3865,7 @@ index aeff38a6e7..f3c0a85088 100644
              path that it represents. Under CE, there are no relative paths so
              the argument must be the full path anyway. */
 diff --git a/Python/thread.c b/Python/thread.c
-index 3b69f961a4..d059bc887d 100644
+index 3b69f96..d059bc8 100644
 --- a/Python/thread.c
 +++ b/Python/thread.c
 @@ -7,6 +7,12 @@
@@ -4057,7 +3882,7 @@ index 3b69f961a4..d059bc887d 100644
  #ifndef _POSIX_THREADS
  /* This means pthreads are not implemented in libc headers, hence the macro
 diff --git a/Python/thread_nt.h b/Python/thread_nt.h
-index a161d7cb46..012da59660 100644
+index a161d7c..012da59 100644
 --- a/Python/thread_nt.h
 +++ b/Python/thread_nt.h
 @@ -288,9 +288,10 @@ _pythread_nt_set_stacksize(size_t size)
@@ -4073,7 +3898,7 @@ index a161d7cb46..012da59660 100644
  #ifdef Py_HAVE_NATIVE_TLS
  int
 diff --git a/cmake/extensions/CMakeLists.txt b/cmake/extensions/CMakeLists.txt
-index 28c40dcee3..1722ebf24e 100644
+index 28c40dc..1722ebf 100644
 --- a/cmake/extensions/CMakeLists.txt
 +++ b/cmake/extensions/CMakeLists.txt
 @@ -154,18 +154,24 @@ add_python_extension(linuxaudiodev REQUIRES LINUX IS_PY2 SOURCES linuxaudiodev.c
@@ -4125,7 +3950,7 @@ index 28c40dcee3..1722ebf24e 100644
      )
  else()
 diff --git a/cmake/libpython/CMakeLists.txt b/cmake/libpython/CMakeLists.txt
-index 8a4208e42f..14d2c67b11 100644
+index 8a4208e..14d2c67 100644
 --- a/cmake/libpython/CMakeLists.txt
 +++ b/cmake/libpython/CMakeLists.txt
 @@ -165,6 +165,15 @@ elseif(WIN32)
@@ -4169,5 +3994,5 @@ index 8a4208e42f..14d2c67b11 100644
      if(APPLE)
          # HACK For python <= 2.7.3, this fix link error related to undefined _environ symbol and
 -- 
-2.13.2.windows.1
+2.10.2.windows.1
 
