@@ -696,6 +696,9 @@ ExternalProject_Add(libwebp
 		-DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_PREFIX}
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL WindowsStore)
+    set(ADDITIONAL_UWP_ARGS "-DSTACK_DIRECTION:BOOL=ON")
+endif()
 ExternalProject_Add(mysql-connector-c
   DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/downloads
   URL https://dev.mysql.com/get/Downloads/Connector-C/mysql-connector-c-6.1.9-src.tar.gz
@@ -710,7 +713,7 @@ ExternalProject_Add(mysql-connector-c
     -DBUILD_SHARED_LIBS:BOOL=ON
     -DINSTALL_DOC:BOOL=OFF
     -DWITH_SSL:STRING=yes
-    -DSTACK_DIRECTION=1
+    ${ADDITIONAL_UWP_ARGS}
 )
 add_dependency_project_package(mysql-connector-c 6.1.9)
 
