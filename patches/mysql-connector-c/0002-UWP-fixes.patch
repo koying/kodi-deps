@@ -1,4 +1,4 @@
-From 3a3802cddd331446b5b698042da59dc186fc815b Mon Sep 17 00:00:00 2001
+From 5c8ae48e97dd12133e30fc68fd9ed5621a2c95f4 Mon Sep 17 00:00:00 2001
 From: "Chris \"Koying\" Browet" <cbro@semperpax.com>
 Date: Sat, 18 Nov 2017 18:52:41 +0100
 Subject: [PATCH 2/2] [UWP]: fixes
@@ -9,10 +9,10 @@ Subject: [PATCH 2/2] [UWP]: fixes
  include/mysql.h                 |  2 --
  libmysql/CMakeLists.txt         |  2 +-
  libmysql/get_password.c         |  7 ++++++-
- libmysql/libmysql.c             | 11 ++++++++++-
+ libmysql/libmysql.c             |  6 +++++-
  mysys/CMakeLists.txt            | 18 +++++++++++++++---
  mysys/charset.c                 |  4 ++++
- mysys/mf_path.c                 | 15 ++++++++++++---
+ mysys/mf_path.c                 |  4 ++++
  mysys/my_access.c               |  4 ++++
  mysys/my_chsize.c               |  2 +-
  mysys/my_create.c               |  2 +-
@@ -30,13 +30,13 @@ Subject: [PATCH 2/2] [UWP]: fixes
  mysys/my_seek.c                 |  2 +-
  mysys/my_thread.c               |  4 ++++
  mysys/my_write.c                |  2 +-
- mysys_ssl/mf_tempdir.cc         |  2 ++
- mysys_ssl/my_default.cc         | 24 +++++++++++++++++++++++-
+ mysys_ssl/mf_tempdir.cc         |  4 ++++
+ mysys_ssl/my_default.cc         | 27 ++++++++++++++++++++++++++-
  sql-common/client.c             | 16 ++++++++++------
  sql-common/client_plugin.c      |  9 ++++++++-
- testclients/mysql_client_test.c |  9 ++++++++-
+ testclients/mysql_client_test.c |  7 ++++++-
  vio/viopipe.c                   |  8 ++++++++
- 32 files changed, 164 insertions(+), 43 deletions(-)
+ 32 files changed, 154 insertions(+), 40 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 1898265..a1ee4cd 100644
@@ -115,7 +115,7 @@ index fb7bc54..8f36978 100644
    ADD_SUBDIRECTORY(authentication_win)
    LIST(APPEND LIBS auth_win_client)
 diff --git a/libmysql/get_password.c b/libmysql/get_password.c
-index d904fbe..edb3b80 100644
+index d904fbe..50e34af 100644
 --- a/libmysql/get_password.c
 +++ b/libmysql/get_password.c
 @@ -56,7 +56,12 @@
@@ -123,7 +123,7 @@ index d904fbe..edb3b80 100644
  #endif
  
 -#if defined(_WIN32)
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#ifdef WINAPI_FAMILY && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +char *get_tty_password(const char *opt_message)
 +{
 +  return NULL;
@@ -133,64 +133,29 @@ index d904fbe..edb3b80 100644
  char *get_tty_password(const char *opt_message)
  {
 diff --git a/libmysql/libmysql.c b/libmysql/libmysql.c
-index 659ed2d..be80bcc 100644
+index 659ed2d..8e32e34 100644
 --- a/libmysql/libmysql.c
 +++ b/libmysql/libmysql.c
-@@ -141,8 +141,11 @@ int STDCALL mysql_server_init(int argc MY_ATTRIBUTE((unused)),
-       if ((serv_ptr= getservbyname("mysql", "tcp")))
-         mysql_port= (uint) ntohs((ushort) serv_ptr->s_port);
- #endif
-+
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-       if ((env= getenv("MYSQL_TCP_PORT")))
-         mysql_port=(uint) atoi(env);
-+#endif
-     }
+@@ -66,6 +66,10 @@ my_bool	net_flush(NET *net);
+ #define SOCKET_ERROR -1
+ #endif /* _WIN32 */
  
-     if (!mysql_unix_port)
-@@ -153,8 +156,10 @@ int STDCALL mysql_server_init(int argc MY_ATTRIBUTE((unused)),
- #else
-       mysql_unix_port = (char*) MYSQL_UNIX_ADDR;
- #endif
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-       if ((env = getenv("MYSQL_UNIX_PORT")))
- 	mysql_unix_port = env;
++#ifdef WINAPI_FAMILY && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
 +#endif
-     }
-     mysql_debug(NullS);
- #if defined(SIGPIPE) && !defined(_WIN32)
-@@ -259,10 +264,11 @@ mysql_debug(const char *debug MY_ATTRIBUTE((unused)))
-   {
-     DBUG_PUSH(debug);
-   }
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++
+ /*
+   If allowed through some configuration, then this needs to
+   be changed
+@@ -262,7 +266,7 @@ mysql_debug(const char *debug MY_ATTRIBUTE((unused)))
    else if ((env = getenv("MYSQL_DEBUG")))
    {
      DBUG_PUSH(env);
 -#if !defined(_WINVER) && !defined(WINVER)
-+#if (!defined(_WINVER) && !defined(WINVER))
++#if (!defined(_WINVER) && !defined(WINVER)) || (defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      puts("\n-------------------------------------------------------");
      puts("MYSQL_DEBUG found. libmysql started with the following:");
      puts(env);
-@@ -277,6 +283,7 @@ mysql_debug(const char *debug MY_ATTRIBUTE((unused)))
- #endif
-   }
- #endif
-+#endif
- }
- 
- 
-@@ -389,8 +396,10 @@ void read_user_name(char *name)
- 
- void read_user_name(char *name)
- {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-   char *str=getenv("USER");		/* ODBC will send user variable */
-   strmake(name,str ? str : "ODBC", USERNAME_LENGTH);
-+#endif
- }
- 
- #endif
 diff --git a/mysys/CMakeLists.txt b/mysys/CMakeLists.txt
 index 9615263..247f1e3 100644
 --- a/mysys/CMakeLists.txt
@@ -252,61 +217,29 @@ index 0ac55fc..83ed119 100644
    return fs_cset_cache;
  }
 diff --git a/mysys/mf_path.c b/mysys/mf_path.c
-index d3de3b2..cb2f3c0 100644
+index d3de3b2..7312b72 100644
 --- a/mysys/mf_path.c
 +++ b/mysys/mf_path.c
-@@ -39,9 +39,12 @@ char * my_path(char * to, const char *progname,
+@@ -17,6 +17,10 @@
+ #include "my_sys.h"
+ #include <m_string.h>
  
-   start=to;					/* Return this */
-   if (progname && (dirname_part(to, progname, &to_length) ||
--		   find_file_in_path(to,progname) ||
--		   ((prog=getenv("_")) != 0 &&
--                    dirname_part(to, prog, &to_length))))
-+		   find_file_in_path(to,progname)
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-+		   || ((prog=getenv("_")) != 0 &&
-+                    dirname_part(to, prog, &to_length))
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
 +#endif
-+         ))
-   {
-     (void) intern_filename(to,to);
-     if (!test_if_hard_path(to))
-@@ -52,8 +55,10 @@ char * my_path(char * to, const char *progname,
-   }
-   else
-   {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-     if ((end = getenv("MY_BASEDIR_VERSION")) == 0 &&
- 	(end = getenv("MY_BASEDIR")) == 0)
-+#endif
-     {
- #ifdef DEFAULT_BASEDIR
-       end= (char*) DEFAULT_BASEDIR;
-@@ -88,6 +93,9 @@ static char *find_file_in_path(char *to, const char *name)
-   char *path,*pos,dir[2];
-   const char *ext="";
++
+ static char *find_file_in_path(char *to,const char *name);
  
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-+  return NullS;
-+#else
-   if (!(path=getenv("PATH")))
-     return NullS;
-   dir[0]=FN_LIBCHAR; dir[1]=0;
-@@ -118,4 +126,5 @@ static char *find_file_in_path(char *to, const char *name)
-   }
- #endif
-   return NullS;				/* File not found */
-+#endif
- }
+ 	/* Finds where program can find it's files.
 diff --git a/mysys/my_access.c b/mysys/my_access.c
-index 0d66643..278bf9b 100644
+index 0d66643..41882cf 100644
 --- a/mysys/my_access.c
 +++ b/mysys/my_access.c
 @@ -170,11 +170,15 @@ int check_if_legal_tablename(const char *name)
  */
  static my_bool does_drive_exists(char drive_letter)
  {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    DWORD drive_mask= GetLogicalDrives();
    drive_letter= toupper(drive_letter);
  
@@ -319,7 +252,7 @@ index 0d66643..278bf9b 100644
  
  /**
 diff --git a/mysys/my_chsize.c b/mysys/my_chsize.c
-index ca388dc..c150ec3 100644
+index ca388dc..f91f098 100644
 --- a/mysys/my_chsize.c
 +++ b/mysys/my_chsize.c
 @@ -54,7 +54,7 @@ int my_chsize(File fd, my_off_t newlength, int filler, myf MyFlags)
@@ -327,12 +260,12 @@ index ca388dc..c150ec3 100644
    if (oldsize > newlength)
    {
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      if (my_win_chsize(fd, newlength))
      {
        set_my_errno(errno);
 diff --git a/mysys/my_create.c b/mysys/my_create.c
-index a140eb7..392eb0f 100644
+index a140eb7..c797cbf 100644
 --- a/mysys/my_create.c
 +++ b/mysys/my_create.c
 @@ -40,7 +40,7 @@ File my_create(const char *FileName, int CreateFlags, int access_flags,
@@ -340,12 +273,12 @@ index a140eb7..392eb0f 100644
    DBUG_PRINT("my",("Name: '%s' CreateFlags: %d  AccessFlags: %d  MyFlags: %d",
  		   FileName, CreateFlags, access_flags, MyFlags));
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    fd= my_win_open(FileName, access_flags | O_CREAT);
  #else
    fd= open((char *) FileName, access_flags | O_CREAT,
 diff --git a/mysys/my_delete.c b/mysys/my_delete.c
-index 7f82e60..556244e 100644
+index 7f82e60..aa211fe 100644
 --- a/mysys/my_delete.c
 +++ b/mysys/my_delete.c
 @@ -41,7 +41,7 @@ int my_delete(const char *name, myf MyFlags)
@@ -353,12 +286,12 @@ index 7f82e60..556244e 100644
  } /* my_delete */
  
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
  /**
    Delete file which is possibly not closed.
  
 diff --git a/mysys/my_fopen.c b/mysys/my_fopen.c
-index 681c3b5..7dd0b04 100644
+index 681c3b5..535db6b 100644
 --- a/mysys/my_fopen.c
 +++ b/mysys/my_fopen.c
 @@ -47,7 +47,7 @@ FILE *my_fopen(const char *filename, int flags, myf MyFlags)
@@ -366,7 +299,7 @@ index 681c3b5..7dd0b04 100644
    make_ftype(type,flags);
  
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    fd= my_win_fopen(filename, type);
  #else
    fd= fopen(filename, type);
@@ -375,7 +308,7 @@ index 681c3b5..7dd0b04 100644
  
  
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
  
  static FILE *my_win_freopen(const char *path, const char *mode, FILE *stream)
  {
@@ -384,7 +317,7 @@ index 681c3b5..7dd0b04 100644
    FILE *result;
  
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    result= my_win_freopen(path, mode, stream);
  #else
    result= freopen(path, mode, stream);
@@ -394,7 +327,7 @@ index 681c3b5..7dd0b04 100644
    file= my_fileno(fd);
 -#ifndef _WIN32
 -  err= fclose(fd);
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
 +  err = my_win_fclose(fd);
  #else
 -  err= my_win_fclose(fd);
@@ -407,12 +340,12 @@ index 681c3b5..7dd0b04 100644
  
    make_ftype(type,Flags);
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    fd= my_win_fdopen(Filedes, type);
  #else
    fd= fdopen(Filedes, type);
 diff --git a/mysys/my_fstream.c b/mysys/my_fstream.c
-index 83d1ebb..2a42db7 100644
+index 83d1ebb..98b6ffa 100644
 --- a/mysys/my_fstream.c
 +++ b/mysys/my_fstream.c
 @@ -178,7 +178,7 @@ my_off_t my_ftell(FILE *stream, myf MyFlags MY_ATTRIBUTE((unused)))
@@ -420,7 +353,7 @@ index 83d1ebb..2a42db7 100644
  int my_fileno(FILE *f)
  {
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    return my_win_fileno(f);
  #else
   return fileno(f);
@@ -467,7 +400,7 @@ index 6d650a8..2172829 100644
      set_my_errno(errno);
      if (MyFlags & MY_WME)
 diff --git a/mysys/my_init.c b/mysys/my_init.c
-index 54d44e6..9e3801f 100644
+index 54d44e6..8cd788b 100644
 --- a/mysys/my_init.c
 +++ b/mysys/my_init.c
 @@ -27,6 +27,7 @@
@@ -478,38 +411,22 @@ index 54d44e6..9e3801f 100644
  #include <crtdbg.h>
  /* WSAStartup needs winsock library*/
  #pragma comment(lib, "ws2_32")
-@@ -100,12 +101,14 @@ my_bool my_init()
-   my_umask= 0640;                       /* Default umask for new files */
-   my_umask_dir= 0750;                   /* Default umask for new directories */
+@@ -34,6 +35,10 @@ my_bool have_tcpip=0;
+ static void my_win_init();
+ #endif
  
-+#if (WINAPI_FAMILY != WINAPI_FAMILY_APP)
-   /* Default creation of new files */
-   if ((str= getenv("UMASK")) != 0)
-     my_umask= (int) (atoi_octal(str) | 0640);
-   /* Default creation of new dir's */
-   if ((str= getenv("UMASK_DIR")) != 0)
-     my_umask_dir= (int) (atoi_octal(str) | 0750);
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
 +#endif
++
+ #define SCALE_SEC       100
+ #define SCALE_USEC      10000
  
-   instrumented_stdin.m_file= stdin;
-   instrumented_stdin.m_psi= NULL;       /* not yet instrumented */
-@@ -117,9 +120,11 @@ my_bool my_init()
-   if (my_thread_init())
-     return TRUE;
- 
-+#if (WINAPI_FAMILY != WINAPI_FAMILY_APP)
-   /* $HOME is needed early to parse configuration files located in ~/ */
-   if ((home_dir= getenv("HOME")) != 0)
-     home_dir= intern_filename(home_dir_buff, home_dir);
-+#endif
- 
-   {
-     DBUG_ENTER("my_init");
 @@ -299,6 +304,7 @@ static void win_init_time()
  */
  static void win_init_registry()
  {
-+#if (WINAPI_FAMILY != WINAPI_FAMILY_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    HKEY key_handle;
  
    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)"SOFTWARE\\MySQL",
@@ -525,7 +442,7 @@ index 54d44e6..9e3801f 100644
  
  static my_bool win32_have_tcpip()
  {
-+#if (WINAPI_FAMILY != WINAPI_FAMILY_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    HKEY hTcpipRegKey;
    if (RegOpenKeyEx ( HKEY_LOCAL_MACHINE, TCPIPKEY, 0, KEY_READ,
  		      &hTcpipRegKey) != ERROR_SUCCESS)
@@ -541,14 +458,14 @@ index 54d44e6..9e3801f 100644
    _RTC_SetErrorFunc(handle_rtc_failure);
  #endif
  
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    _tzset();
 +#endif
  
    win_init_time();
    win_init_registry();
 diff --git a/mysys/my_lib.c b/mysys/my_lib.c
-index 9764794..0b32b3f 100644
+index 9764794..36dc5a3 100644
 --- a/mysys/my_lib.c
 +++ b/mysys/my_lib.c
 @@ -354,7 +354,7 @@ int my_fstat(File Filedes, MY_STAT *stat_area,
@@ -556,7 +473,7 @@ index 9764794..0b32b3f 100644
    DBUG_ENTER("my_fstat");
    DBUG_PRINT("my",("fd: %d  MyFlags: %d", Filedes, MyFlags));
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    DBUG_RETURN(my_win_fstat(Filedes, stat_area));
  #else
    DBUG_RETURN(fstat(Filedes, (struct stat *) stat_area));
@@ -565,12 +482,12 @@ index 9764794..0b32b3f 100644
                                             sizeof(MY_STAT), my_flags)))
        goto error;
 -#ifndef _WIN32
-+#if !defined(_WIN32) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !defined(_WIN32) || (defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      if (! stat((char *) path, (struct stat *) stat_area) )
        DBUG_RETURN(stat_area);
  #else
 diff --git a/mysys/my_open.c b/mysys/my_open.c
-index b67ac6f..c54ee20 100644
+index b67ac6f..0935001 100644
 --- a/mysys/my_open.c
 +++ b/mysys/my_open.c
 @@ -43,7 +43,7 @@ File my_open(const char *FileName, int Flags, myf MyFlags)
@@ -578,7 +495,7 @@ index b67ac6f..c54ee20 100644
    DBUG_PRINT("my",("Name: '%s'  Flags: %d  MyFlags: %d",
  		   FileName, Flags, MyFlags));
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    fd= my_win_open(FileName, Flags);
  #else
    fd = open(FileName, Flags, my_umask);	/* Normal unix */
@@ -587,12 +504,12 @@ index b67ac6f..c54ee20 100644
  
    mysql_mutex_lock(&THR_LOCK_open);
 -#ifndef _WIN32
-+#if !defined(_WIN32) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !defined(_WIN32) || (defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    do
    {
      err= close(fd);
 diff --git a/mysys/my_pread.c b/mysys/my_pread.c
-index 1511fd7..5c7c3a8 100644
+index 1511fd7..1d84268 100644
 --- a/mysys/my_pread.c
 +++ b/mysys/my_pread.c
 @@ -54,7 +54,7 @@ size_t my_pread(File Filedes, uchar *Buffer, size_t Count, my_off_t offset,
@@ -600,7 +517,7 @@ index 1511fd7..5c7c3a8 100644
    {
      errno= 0;    /* Linux, Windows don't reset this on EOF/success */
 -#if defined(_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      readbytes= my_win_pread(Filedes, Buffer, Count, offset);
  #else
      readbytes= pread(Filedes, Buffer, Count, offset);
@@ -609,25 +526,25 @@ index 1511fd7..5c7c3a8 100644
    {
      errno= 0;
 -#if defined (_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      writtenbytes= my_win_pwrite(Filedes, Buffer, Count, offset);
  #else
      writtenbytes= pwrite(Filedes, Buffer, Count, offset);
 diff --git a/mysys/my_rdtsc.c b/mysys/my_rdtsc.c
-index 2be781f..a7deca9 100644
+index 2be781f..f3a2c36 100644
 --- a/mysys/my_rdtsc.c
 +++ b/mysys/my_rdtsc.c
 @@ -314,6 +314,8 @@ ulonglong my_timer_ticks(void)
      struct tms times_buf;
      return (ulonglong) times(&times_buf);
    }
-+#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#elif defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +  return GetTickCount64();
  #elif defined(_WIN32)
    return (ulonglong) GetTickCount();
  #else
 diff --git a/mysys/my_read.c b/mysys/my_read.c
-index c80ad1c..cc63055 100644
+index c80ad1c..521b67e 100644
 --- a/mysys/my_read.c
 +++ b/mysys/my_read.c
 @@ -46,7 +46,7 @@ size_t my_read(File Filedes, uchar *Buffer, size_t Count, myf MyFlags)
@@ -635,12 +552,12 @@ index c80ad1c..cc63055 100644
    {
      errno= 0;					/* Linux, Windows don't reset this on EOF/success */
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      readbytes= my_win_read(Filedes, Buffer, Count);
  #else
      readbytes= read(Filedes, Buffer, Count);
 diff --git a/mysys/my_seek.c b/mysys/my_seek.c
-index 3a73e06..4621c8a 100644
+index 3a73e06..1b8a9df 100644
 --- a/mysys/my_seek.c
 +++ b/mysys/my_seek.c
 @@ -56,7 +56,7 @@ my_off_t my_seek(File fd, my_off_t pos, int whence, myf MyFlags)
@@ -648,19 +565,19 @@ index 3a73e06..4621c8a 100644
    */
    DBUG_ASSERT(fd != -1);
 -#if defined (_WIN32)
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    newpos= my_win_lseek(fd, pos, whence);
  #else
    newpos= lseek(fd, pos, whence);
 diff --git a/mysys/my_thread.c b/mysys/my_thread.c
-index 5db580e..cdca932 100644
+index 5db580e..1e49db4 100644
 --- a/mysys/my_thread.c
 +++ b/mysys/my_thread.c
 @@ -163,7 +163,11 @@ int my_thread_cancel(my_thread_handle *thread)
  
    if (thread->handle)
    {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
       ok= TerminateThread(thread->handle, 0);
 +#else
 +    ok = TRUE;
@@ -669,7 +586,7 @@ index 5db580e..cdca932 100644
    }
    if (ok)
 diff --git a/mysys/my_write.c b/mysys/my_write.c
-index d849949..7b47ea4 100644
+index d849949..5a2afb6 100644
 --- a/mysys/my_write.c
 +++ b/mysys/my_write.c
 @@ -57,7 +57,7 @@ size_t my_write(File Filedes, const uchar *Buffer, size_t Count, myf MyFlags)
@@ -677,56 +594,52 @@ index d849949..7b47ea4 100644
    {
      errno= 0;
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      writtenbytes= my_win_write(Filedes, Buffer, Count);
  #else
      writtenbytes= write(Filedes, Buffer, Count);
 diff --git a/mysys_ssl/mf_tempdir.cc b/mysys_ssl/mf_tempdir.cc
-index 2935509..735713c 100644
+index 2935509..ab023bb 100644
 --- a/mysys_ssl/mf_tempdir.cc
 +++ b/mysys_ssl/mf_tempdir.cc
-@@ -36,6 +36,7 @@ my_bool init_tmpdir(MY_TMPDIR *tmpdir, const char *pathlist)
-   memset(tmpdir, 0, sizeof(*tmpdir));
-   if (!pathlist || !pathlist[0])
-   {
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP | WINAPI_PARTITION_SYSTEM)
-     /* Get default temporary directory */
-     pathlist=getenv("TMPDIR");	/* Use this if possible */
- #if defined(_WIN32)
-@@ -44,6 +45,7 @@ my_bool init_tmpdir(MY_TMPDIR *tmpdir, const char *pathlist)
-     if (!pathlist)
-       pathlist=getenv("TMP");
+@@ -24,6 +24,10 @@
+ #define DELIM ':'
  #endif
+ 
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
 +#endif
-     if (!pathlist || !pathlist[0])
-       pathlist= DEFAULT_TMPDIR;
-   }
++
+ my_bool init_tmpdir(MY_TMPDIR *tmpdir, const char *pathlist)
+ {
+   char *end, *copy;
 diff --git a/mysys_ssl/my_default.cc b/mysys_ssl/my_default.cc
-index d329fc9..463f5e4 100644
+index d329fc9..b85cfa6 100644
 --- a/mysys_ssl/my_default.cc
 +++ b/mysys_ssl/my_default.cc
-@@ -273,8 +273,10 @@ int my_search_option_files(const char *conf_file, int *argc, char ***argv,
-                                       (char **) &my_defaults_group_suffix,
-                                       (char **) &my_login_path, found_no_defaults);
+@@ -48,6 +48,10 @@
+ #include <winbase.h>
+ #endif
  
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP | WINAPI_PARTITION_SYSTEM)
-     if (! my_defaults_group_suffix)
-       my_defaults_group_suffix= getenv(STRINGIFY_ARG(DEFAULT_GROUP_SUFFIX_ENV));
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
 +#endif
++
+ #include "prealloced_array.h"
  
-     if (forced_extra_defaults && !defaults_already_read)
-     {
-@@ -1326,7 +1328,8 @@ typedef UINT (WINAPI *GET_SYSTEM_WINDOWS_DIRECTORY)(LPSTR, UINT);
+ C_MODE_START
+@@ -1326,7 +1330,9 @@ typedef UINT (WINAPI *GET_SYSTEM_WINDOWS_DIRECTORY)(LPSTR, UINT);
  
  static size_t my_get_system_windows_directory(char *buffer, size_t size)
  {
 -  size_t count;
 +  size_t count = 0;
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP | WINAPI_PARTITION_SYSTEM)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
++  )
    GET_SYSTEM_WINDOWS_DIRECTORY
      func_ptr= (GET_SYSTEM_WINDOWS_DIRECTORY)
                GetProcAddress(GetModuleHandle("kernel32.dll"),
-@@ -1346,6 +1349,7 @@ static size_t my_get_system_windows_directory(char *buffer, size_t size)
+@@ -1346,6 +1352,7 @@ static size_t my_get_system_windows_directory(char *buffer, size_t size)
      count-= 8;
      buffer[count] = '\0';
    }
@@ -734,21 +647,21 @@ index d329fc9..463f5e4 100644
    return count;
  }
  
-@@ -1354,7 +1358,9 @@ static const char *my_get_module_parent(char *buf, size_t size)
+@@ -1354,7 +1361,9 @@ static const char *my_get_module_parent(char *buf, size_t size)
  {
    char *last= NULL;
    char *end;
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP | WINAPI_PARTITION_SYSTEM)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    if (!GetModuleFileName(NULL, buf, (DWORD) size))
 +#endif
      return NULL;
    end= strend(buf);
  
-@@ -1393,6 +1399,17 @@ static const char **init_default_directories(MEM_ROOT *alloc)
+@@ -1393,6 +1402,17 @@ static const char **init_default_directories(MEM_ROOT *alloc)
      return NULL;
    memset(dirs, 0, DEFAULT_DIRS_SIZE * sizeof(char *));
  
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +
 +#if defined(DEFAULT_SYSCONFDIR)
 +  if (DEFAULT_SYSCONFDIR[0])
@@ -762,7 +675,7 @@ index d329fc9..463f5e4 100644
  #ifdef _WIN32
  
    {
-@@ -1430,6 +1447,7 @@ static const char **init_default_directories(MEM_ROOT *alloc)
+@@ -1430,6 +1450,7 @@ static const char **init_default_directories(MEM_ROOT *alloc)
  #if !defined(_WIN32)
    errors += add_directory(alloc, "~/", dirs);
  #endif
@@ -770,17 +683,17 @@ index d329fc9..463f5e4 100644
  
    return (errors > 0 ? NULL : dirs);
  }
-@@ -1446,6 +1464,9 @@ static const char **init_default_directories(MEM_ROOT *alloc)
+@@ -1446,6 +1467,9 @@ static const char **init_default_directories(MEM_ROOT *alloc)
  
  int my_default_get_login_file(char *file_name, size_t file_name_size)
  {
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +  return 0;
 +#else
    size_t rc;
  
    if (getenv("MYSQL_TEST_LOGIN_FILE"))
-@@ -1470,6 +1491,7 @@ int my_default_get_login_file(char *file_name, size_t file_name_size)
+@@ -1470,6 +1494,7 @@ int my_default_get_login_file(char *file_name, size_t file_name_size)
      return 0;
  
    return 1;
@@ -789,7 +702,7 @@ index d329fc9..463f5e4 100644
  
  /**
 diff --git a/sql-common/client.c b/sql-common/client.c
-index 9e88e9f..4fd3b51 100644
+index 9e88e9f..278837e 100644
 --- a/sql-common/client.c
 +++ b/sql-common/client.c
 @@ -353,7 +353,7 @@ void set_mysql_extended_error(MYSQL *mysql, int errcode,
@@ -797,7 +710,7 @@ index 9e88e9f..4fd3b51 100644
  */
  
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
  
  static HANDLE create_named_pipe(MYSQL *mysql, DWORD connect_timeout,
                                  const char **arg_host,
@@ -807,7 +720,7 @@ index 9e88e9f..4fd3b51 100644
  
 -
 -#ifdef _WIN32
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +static my_bool is_NT(void)
 +{
 +  return 0;
@@ -821,7 +734,7 @@ index 9e88e9f..4fd3b51 100644
    const char *csname= MYSQL_DEFAULT_CHARSET_NAME;
  
 -#ifdef _WIN32
-+#if defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    char cpbuf[64];
    {
      my_snprintf(cpbuf, sizeof(cpbuf), "cp%d", (int) GetConsoleCP());
@@ -830,7 +743,7 @@ index 9e88e9f..4fd3b51 100644
    {
      passwd=mysql->options.password;
 -#if !defined(MYSQL_SERVER)
-+#if !defined(MYSQL_SERVER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !defined(MYSQL_SERVER) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
      if (!passwd)
        passwd=getenv("MYSQL_PWD");		/* get it from environment */
  #endif
@@ -839,19 +752,19 @@ index 9e88e9f..4fd3b51 100644
      mysql->options.protocol=MYSQL_PROTOCOL_SOCKET;
    }
 -#elif defined(_WIN32)
-+#elif defined(_WIN32) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#elif defined(_WIN32) && !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    if (!net->vio &&
        (mysql->options.protocol == MYSQL_PROTOCOL_PIPE ||
         (host && !strcmp(host,LOCAL_HOST_NAMEDPIPE)) ||
 diff --git a/sql-common/client_plugin.c b/sql-common/client_plugin.c
-index c7dfda9..f0f3d7c 100644
+index c7dfda9..17621e3 100644
 --- a/sql-common/client_plugin.c
 +++ b/sql-common/client_plugin.c
 @@ -288,6 +288,9 @@ add_plugin_withargs(MYSQL *mysql, struct st_mysql_client_plugin *plugin,
  */
  static void load_env_plugins(MYSQL *mysql)
  {
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +  return;
 +#else
    char *plugs, *free_env, *s= getenv("LIBMYSQL_PLUGINS");
@@ -870,7 +783,7 @@ index c7dfda9..f0f3d7c 100644
  mysql_load_plugin_v(MYSQL *mysql, const char *name, int type,
                      int argc, va_list args)
  {
-+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +  return NULL;
 +#else
    const char *errmsg;
@@ -885,42 +798,39 @@ index c7dfda9..f0f3d7c 100644
  
  /* see <mysql/client_plugin.h> for a full description */
 diff --git a/testclients/mysql_client_test.c b/testclients/mysql_client_test.c
-index 1528a5e..3343a6e 100644
+index 1528a5e..8bae979 100644
 --- a/testclients/mysql_client_test.c
 +++ b/testclients/mysql_client_test.c
-@@ -427,7 +427,10 @@ FILE *mct_log_file= NULL;
+@@ -26,6 +26,10 @@
+ 
+ #include "mysql_client_fw.c"
+ 
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define getenv(x) NULL
++#endif
++
+ /* Query processing */
+ 
+ static void client_query()
+@@ -427,7 +431,8 @@ FILE *mct_log_file= NULL;
  
  void mct_start_logging(const char *test_case_name)
  {
 -  const char *tmp_dir= getenv("MYSQL_TMP_DIR");
 +  const char *tmp_dir = NULL;
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
 +  tmp_dir= getenv("MYSQL_TMP_DIR");
-+#endif
  
    if (!tmp_dir)
    {
-@@ -20269,7 +20272,11 @@ static void test_bug20444737()
-   char       *master_test_filename;
-   ulong length;
-   int rc;
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-   const char *test_dir= getenv("MYSQL_TEST_DIR");
-+#else
-+  const char *test_dir = NULL;
-+#endif
-   const char db_query[]="USE client_test_db";
- 
-   myheader("Test_bug20444737");
 diff --git a/vio/viopipe.c b/vio/viopipe.c
-index c2145cc..bc1bdd2 100644
+index c2145cc..58dd3cf 100644
 --- a/vio/viopipe.c
 +++ b/vio/viopipe.c
 @@ -92,15 +92,20 @@ size_t vio_write_pipe(Vio *vio, const uchar *buf, size_t count)
  
  my_bool vio_is_connected_pipe(Vio *vio)
  {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    if (PeekNamedPipe(vio->hPipe, NULL, 0, NULL, NULL, NULL))
      return TRUE;
    else
@@ -933,7 +843,7 @@ index c2145cc..bc1bdd2 100644
  
  int vio_shutdown_pipe(Vio *vio)
  {
-+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
++#if !(defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP))
    BOOL ret;
    DBUG_ENTER("vio_shutdown_pipe");
  
